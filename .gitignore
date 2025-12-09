@@ -2,7 +2,9 @@
 build/
 filesystem/
 *.z64
-# .vscode/
+.vscode/
+*.eeprom
+*.pak
 
 # Blender backup files
 *.blend[0-9]
