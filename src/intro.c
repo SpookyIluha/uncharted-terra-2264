@@ -1,8 +1,9 @@
 #include <libdragon.h>
+#include "intro.h"
+
 
 void libdragon_logo()
 {
-    rspq_wait();
     const color_t RED = RGBA32(221, 46, 26, 255);
     const color_t WHITE = RGBA32(255, 255, 255, 255);
 
@@ -13,11 +14,9 @@ void libdragon_logo()
     wav64_t music;
     wav64_open(&music, "rom:/sfx/intro/dragon.wav64");
     mixer_ch_set_limits(0, 0, 48000, 0);
-    
 
     display_init(RESOLUTION_640x480, DEPTH_16_BPP, 2, GAMMA_NONE, FILTERS_RESAMPLE);
 
-    
     float angle1 = 0, angle2 = 0, angle3 = 0;
     float scale1 = 0, scale2 = 0, scale3 = 0, scroll4 = 0;
     uint32_t ms0 = 0;
@@ -161,10 +160,4 @@ void libdragon_logo()
     sprite_free(d4);
     wav64_close(&music);
     display_close();
-}
-
-int main()
-{
-  libdragon_logo();
-  return 0;
 }

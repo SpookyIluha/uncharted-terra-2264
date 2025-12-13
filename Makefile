@@ -1,20 +1,23 @@
-NAME = gamejam2025_puzzlegame
+NAME = uncharted-terra-2264
  # Internal ROM name
-ROM_NAME = "Puzzle game temp name"
+ROM_NAME = "Uncharted Terra 2264"
+SOURCE_DIR = src
+GAME_SOURCE_DIR = game
 BUILD_DIR = build
 ASSETS_DIR = assets
 FILESYSTEM_DIR = filesystem
 T3D_INST=$(shell realpath ../..)
 
 include $(N64_INST)/include/n64.mk
-include $(T3D_INST)/include/t3d.mk
+include $(N64_INST)/include/t3d.mk
 
 include assetflags.mk
 
-N64_CFLAGS += -std=gnu2x
-N64_C_AND_CXX_FLAGS += -ftrivial-auto-var-init=zero
+SRCS = $(shell find $(SOURCE_DIR)/ -type f -name '*.c') \
+	   $(shell find $(SOURCE_DIR)/ -type f -name '*.cpp')
 
-src = $(shell find ./src/ -type f -name '*.c')
+SRCS_DSO = $(shell find $(SOURCE_DIR)/$(GAME_SOURCE_DIR)/ -type f -name '*.c') \
+	       $(shell find $(SOURCE_DIR)/$(GAME_SOURCE_DIR)/ -type f -name '*.cpp')
 
 IMAGE_LIST = $(shell find $(ASSETS_DIR)/models/ -type f -name '*.png') \
 			 $(shell find $(ASSETS_DIR)/textures/ -type f -name '*.png')
@@ -31,6 +34,9 @@ ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(MUSIC_LIST:%.wav=%.wav6
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(XM_LIST:%.xm=%.xm64))
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(MODELS_LIST:%.glb=%.t3dm))
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(TEXT_LIST))
+
+N64_CFLAGS += -std=gnu2x
+N64_C_AND_CXX_FLAGS += -I $(SOURCE_DIR) -I $(SOURCE_DIR)/$(GAME_SOURCE_DIR) -Wno-error=write-strings -Wno-error=narrowing -Wno-narrowing -Wno-write-strings -ftrivial-auto-var-init=zero
 
 all: $(NAME).z64
 
@@ -76,11 +82,11 @@ $(FILESYSTEM_DIR)/locale/%: $(ASSETS_DIR)/locale/%
 	cp "$<" $@
 
 $(BUILD_DIR)/$(NAME).dfs: $(ASSETS_LIST)
-$(BUILD_DIR)/$(NAME).elf: $(src:%.c=$(BUILD_DIR)/%.o)
+$(BUILD_DIR)/$(NAME).elf: $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
 $(NAME).z64: N64_ROM_TITLE=$(ROM_NAME)
 $(NAME).z64: $(BUILD_DIR)/$(NAME).dfs
-$(NAME).z64: N64_ROM_SAVETYPE = eeprom4k
+$(NAME).z64: N64_ROM_SAVETYPE = eeprom16k
 
 rebuild:
 	rm -rf $(BUILD_DIR)
