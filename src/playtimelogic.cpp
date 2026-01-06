@@ -27,7 +27,7 @@ void playtimelogic(){
   T3DViewport viewport = t3d_viewport_create_buffered(3);
   int frameIdx = 0;
 
-  currentlevel.load("level1_outside");
+  currentlevel.load("start_ship");
 
   player_init();
   player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
@@ -37,6 +37,8 @@ void playtimelogic(){
     joypad_poll();
     audioutils_mixer_update();
     player_update();
+    traversal_update(); // Check for level transitions
+    traversal_fade_update(); // Update fade from black
     // ======== Update ======== //
     // cycle through FP matrices to avoid overwriting what the RSP may still need to load
     frameIdx = (frameIdx + 1) % 3;
@@ -54,26 +56,13 @@ void playtimelogic(){
     else rdpq_disable_interlaced();
 
     player_draw(&viewport);
+    temporal_dither(frameIdx);
 
-    // temporal dithering to restore as much as possible of True Color
-    switch(FRAME_NUMBER % 4){
-        case 0:
-            rdpq_mode_dithering(DITHER_SQUARE_INVSQUARE);
-            break;
-        case 1:
-            rdpq_mode_dithering(DITHER_NOISE_NOISE);
-            break;
-        case 2:
-            rdpq_mode_dithering(DITHER_NOISE_NOISE);
-            break;
-        case 3:
-            rdpq_mode_dithering(DITHER_BAYER_BAYER);
-            break;
-    }
     rdpq_mode_antialias(AA_REDUCED);
     rdpq_mode_zmode(ZMODE_INTERPENETRATING);
     currentlevel.draw();
     player_draw_ui();
+    traversal_fade_draw(); // Draw fade from black overlay
     rdpq_detach_show();
   }
 }

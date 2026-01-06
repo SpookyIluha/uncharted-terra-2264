@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <cstring>
 #include <libdragon.h>
 #include <t3d/t3d.h>
 #include <t3d/t3dmath.h>
@@ -10,8 +11,18 @@
 #include "engine_t3dm_wrapper.h"
 #include "utils.h"
 #include "level.h"
+#include "player.h"
+#include "camera.h"
 
 Level currentlevel;
+
+uint32_t state = 777;
+
+char custom_rand()
+{
+   state = state * 1664525 + 1013904223;
+   return state >> 24;
+}
 
 // string to vec, also +Z to +Y
 fm_vec3_t string_to_vec(const std::string& input)
@@ -77,9 +88,82 @@ void exposure_set(void* framebuffer){
   if(exposure < 0.9f) exposure = 0.9f;
 }
 
+#define BLOOM_SIZE 48
+
+void bloom_draw(void* framebuffer, sprite_t* bloomsprite){
+    if(!framebuffer) return;
+    surface_t* frame = (surface_t*) framebuffer;
+    surface_t bloom = sprite_get_pixels(bloomsprite);
+
+    rdpq_sync_pipe();
+    rdpq_set_mode_standard();
+    rdpq_mode_filter(FILTER_BILINEAR);
+    temporal_dither(FRAME_NUMBER);
+    rdpq_tex_upload(TILE0, &bloom, NULL);
+    rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+    rdpq_mode_combiner(RDPQ_COMBINER1((0,0,0,PRIM),(PRIM,0,TEX0,0)));
+    rdpq_mode_alphacompare(15);
+
+    state = 777;
+    // sample points across the screen
+    uint16_t *pixels = (uint16_t*)frame->buffer;
+
+    int resx, resy;
+    resx = display_get_width();
+    resy = display_get_height();
+    int samples_x, samples_y;
+    samples_x = resx / BLOOM_SIZE;
+    samples_y = resy / BLOOM_SIZE;
+
+    for(int y = 0; y < samples_y; y++){
+        for(int x = 0; x < samples_x; x++){
+            if(custom_rand() & 0x1) continue;
+            int offsetx = (custom_rand() & 0xF) - 7;
+            int offsety = (custom_rand() & 0xF) - 7;
+
+            int alignedx = ((x * BLOOM_SIZE) + offsetx) & 0b11111'11111'11100'0;
+
+            uint64_t pixels4 = *(uint64_t*)&pixels[(alignedx + (y * BLOOM_SIZE + offsety) * resx)];
+            int brightIntR = 0, brightIntG = 0, brightIntB = 0;
+
+            for(int j = 0; j < 4; j++){
+                brightIntR += (pixels4 & 0b11111'00000'00000'0) >> 10;
+                brightIntG += (pixels4 & 0b00000'11111'00000'0) >> 5;
+                brightIntB += (pixels4 & 0b00000'00000'11111'0);
+                pixels4 >>= 16;
+            }
+
+            color_t col = RGBA32(brightIntR, brightIntG, brightIntB, 0);
+            int brightness = maxi(col.r, maxi(col.g, col.b));
+            brightness -= 222;
+            brightness = maxi(0, brightness);
+
+            if(brightness == 0) 
+                continue;
+
+            brightness *= 8;
+
+            col.a = brightness;
+
+            rdpq_set_prim_color(col);
+            int boxx = x * BLOOM_SIZE + offsetx - (BLOOM_SIZE);
+            int boxy = y * BLOOM_SIZE + offsety - (BLOOM_SIZE);
+            rdpq_texture_rectangle_scaled(TILE0, boxx, boxy, boxx + BLOOM_SIZE * 2, boxy + BLOOM_SIZE * 2, 0, 0, 16,16);
+        }
+    }
+}
 
 void Level::load(char* levelname){
+    debugf("Loading level '%s'...\n", levelname);
     free();
+    strncpy(name, levelname, SHORTSTR_LENGTH - 1);
+    name[SHORTSTR_LENGTH - 1] = '\0';
+    
+    // Clear collisions and traversals before loading new ones
+    memset(aabb_collisions, 0, sizeof(aabb_collisions));
+    memset(traversals, 0, sizeof(traversals));
+    
+    bloomsprite = sprite_load("rom:/textures/effects/bloom.i4.sprite");
     // general data
     {
         tortellini::ini ini;
@@ -115,6 +199,7 @@ void Level::load(char* levelname){
         drawdistance = ini["General"]["drawdistance"] | 100.0f;
 
         hdr.enabled = ini["General"]["hdr"] | false;
+        hdr.bloomenabled = ini["General"]["bloom"] | false;
         hdr.tonemappingaverage = ini["General"]["tonemappingaverage"] | 0.5f;
 
         debugf("Level %s: fog enabled set to %d\n", levelname, fogenabled);
@@ -181,7 +266,7 @@ void Level::load(char* levelname){
         debugf("Level %s: %d traversals loaded\n", levelname, traversalcount);
 
     }
-
+    debugf("Level '%s' loaded successfully\n", levelname);
 }
 
 
@@ -219,6 +304,9 @@ void Level::draw(){
     t3d_fog_set_range(T3D_TOUNITS(fogfardistance), T3D_TOUNITS(fogneardistance));
     rdpq_set_fog_color(fogcolorexposed);
     levelmodel.draw();
+    if(hdr.bloomenabled && bloomsprite) {
+        bloom_draw(&fb, bloomsprite);
+    }
 }
 
 Level::Level(){
@@ -236,8 +324,174 @@ Level::Level(){
 void Level::free(){
     skyboxmodel.free();
     levelmodel.free();
+    if(bloomsprite) {
+        sprite_free(bloomsprite);
+        bloomsprite = nullptr;
+    }
 }
 
 Level::~Level(){
     free();
+}
+
+// Fade from black state for level transitions
+static float traversal_fade_time = 0.0f;
+static bool traversal_fade_active = false;
+
+// Helper function to find a traversal by name in a level
+static traversal_t* find_traversal_by_name(Level* level, const char* name) {
+    debugf("Finding traversal '%s' in level '%s'\n", name, level->name);
+    for(int i = 0; i < MAX_TRAVERSALS; i++) {
+        if(level->traversals[i].collision.enabled && strcmp(level->traversals[i].name, name) == 0) {
+            debugf("Found traversal '%s' at index %d\n", name, i);
+            return &level->traversals[i];
+        }
+    }
+    assertf(false, "Traversal '%s' not found in level '%s'\n", name, level->name);
+}
+
+// Helper function to change level and position player at destination
+static void change_level(const char* levelname, const char* destinationname) {
+    rspq_wait();
+    extern player_t player;
+    
+    char destinationnamebuffer[SHORTSTR_LENGTH];
+    strcpy(destinationnamebuffer, destinationname);
+
+    char levelnamebuffer[SHORTSTR_LENGTH];
+    strcpy(levelnamebuffer, levelname);
+
+    debugf("Changing level: '%s' -> '%s' (destination: '%s')\n", 
+           currentlevel.name, levelnamebuffer, destinationnamebuffer);
+    
+    // Load the new level
+    currentlevel.load(levelnamebuffer);
+    
+    // Find the destination traversal point
+    traversal_t* dest_traversal = find_traversal_by_name(&currentlevel, destinationnamebuffer);
+    
+    assertf(dest_traversal != nullptr, "Destination traversal '%s' not found in level '%s'", destinationnamebuffer, levelnamebuffer);
+        
+    // Set player position to the exit position of the destination traversal
+    fm_vec3_t old_pos = player.position;
+    player_init();
+    player.position = dest_traversal->exitposition;
+    
+    // Calculate direction from traversal origin to exit position
+    fm_vec3_t direction;
+    fm_vec3_sub(&direction, &dest_traversal->collision.center, &dest_traversal->exitposition);
+    direction.y = 0;
+    
+    // Set player rotation to face the direction from origin to exit (horizontal only, pitch = 0)
+    fm_vec3_euler_from_dir(&player.camera.rotation, &direction);
+            
+    // Immediately update camera target offset to match new rotation (no lerp delay)
+    fm_vec3_dir_from_euler(&player.camera.camTarget_off, &player.camera.rotation);
+    
+    // Reset player velocity to prevent carrying momentum between levels
+    player.velocity = (fm_vec3_t){{0, 0, 0}};
+    
+    // Update camera far plane to match new level's draw distance
+    player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
+    
+    debugf("Level change complete: '%s' -> '%s'\n", currentlevel.name, levelnamebuffer);
+    debugf("Player position: (%.2f, %.2f, %.2f) -> (%.2f, %.2f, %.2f)\n",
+           old_pos.x, old_pos.y, old_pos.z,
+           player.position.x, player.position.y, player.position.z);
+    
+    // Start fade from black
+    traversal_fade_time = TRAVERSAL_FADE_DURATION;
+    traversal_fade_active = true;
+}
+
+void traversal_update() {
+    extern player_t player;
+    
+    // Check all traversals in the current level
+    for(int i = 0; i < MAX_TRAVERSALS; i++) {
+        traversal_t* traversal = &currentlevel.traversals[i];
+        
+        // Skip if traversal is not enabled
+        if(!traversal->collision.enabled) {
+            continue;
+        }
+        
+        // Check if player is colliding with this traversal zone
+        fm_vec3_t dummy_out;
+        bool is_colliding = collideAABB(
+            &player.position,
+            0,
+            &traversal->collision.center,
+            &traversal->collision.half_extents,
+            &dummy_out
+        );
+        
+        if(is_colliding) {
+            debugf("Traversal collision detected: '%s' (level: '%s', dest: '%s')\n",
+                   traversal->name, currentlevel.name, traversal->destinationlevel);
+            
+            // Check if this is an interactive traversal
+            if(traversal->interact) {
+                // For interactive traversals, check for button press
+                joypad_buttons_t pressed = joypad_get_buttons_pressed(JOYPAD_PORT_1);
+                if(pressed.a) {
+                    debugf("Interactive traversal '%s' triggered by A button press\n", traversal->name);
+                    // Player pressed A, trigger traversal
+                    change_level(traversal->destinationlevel, traversal->destinationname);
+                    break; // Only process one traversal per frame
+                } else {
+                    // Player is in traversal zone but hasn't pressed A yet
+                    static int last_message_frame = -1;
+                    int current_frame = FRAME_NUMBER;
+                    // Only print this message every 60 frames to avoid spam
+                    if(current_frame - last_message_frame > 60) {
+                        debugf("In interactive traversal zone '%s' - Press A to enter '%s'\n",
+                               traversal->name, traversal->destinationlevel);
+                        last_message_frame = current_frame;
+                    }
+                }
+            } else {
+                debugf("Automatic traversal '%s' triggered\n", traversal->name);
+                // Automatic traversal - trigger immediately
+                change_level(traversal->destinationlevel, traversal->destinationname);
+                break; // Only process one traversal per frame
+            }
+        }
+    }
+}
+
+void traversal_fade_update() {
+    if(traversal_fade_active && traversal_fade_time > 0.0f) {
+        traversal_fade_time -= DELTA_TIME;
+        if(traversal_fade_time <= 0.0f) {
+            traversal_fade_time = 0.0f;
+            traversal_fade_active = false;
+        }
+    }
+}
+
+void traversal_fade_draw() {
+    if(!traversal_fade_active || traversal_fade_time <= 0.0f) {
+        return;
+    }
+    
+    // Calculate fade alpha (1.0 = fully black, 0.0 = transparent)
+    float fade_alpha = traversal_fade_time / TRAVERSAL_FADE_DURATION;
+    fade_alpha = fclampr(fade_alpha, 0.0f, 1.0f);
+    
+    // Get screen dimensions
+    int screen_width = display_get_width();
+    int screen_height = display_get_height();
+    
+    // Draw black overlay with fade
+    uint8_t alpha = (uint8_t)(fade_alpha * 255.0f);
+    color_t fade_color = RGBA32(0, 0, 0, alpha);
+    
+    rdpq_set_mode_standard();
+    rdpq_mode_zbuf(false, false);
+    temporal_dither(FRAME_NUMBER);
+    rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+    rdpq_mode_combiner(RDPQ_COMBINER1((PRIM,0,0,0),(0,0,0,PRIM)));
+    rdpq_set_prim_color(fade_color);
+    rdpq_fill_rectangle(0, 0, screen_width, screen_height);
 }

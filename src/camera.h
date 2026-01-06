@@ -28,6 +28,8 @@ typedef struct {
 
 extern void fm_vec3_dir_from_euler(fm_vec3_t *out, const fm_vec3_t *euler);
 
+extern void fm_vec3_euler_from_dir(fm_vec3_t *out, const fm_vec3_t *dir);
+
 extern void camera_transform(camera_t *camera, T3DViewport* viewport);
 
 #ifdef __cplusplus

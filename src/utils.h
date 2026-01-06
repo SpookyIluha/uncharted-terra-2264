@@ -83,6 +83,10 @@ inline float frandr( float min, float max )
     return min + scale * ( max - min );      /* [min, max] */
 }
 
+inline int maxi(int a, int b) {
+    return (a > b) ? a : b;
+}
+
 color_t get_rainbow_color(float s);
 
 /// @brief Random int [0-max)
@@ -113,6 +117,8 @@ extern bool collideAABB(
     fm_vec3_t* aabbscale, // half-extents
     fm_vec3_t* out
 );
+
+void temporal_dither(int frameidx);
 
 #ifdef __cplusplus
 }

@@ -61,7 +61,7 @@ void player_init(){
     player.speedaccel = (8.0f);
     player.charheight = 1.7f;
     player.charwidth = 0.5f;
-    player.position = (fm_vec3_t){{(-4.5),0,(1.5)}};
+    player.position = (fm_vec3_t){{0,0,0}};
     player.camera.aspect_ratio = (float)4 / (float)3;
     player.camera.FOV = 60;
     player.camera.near_plane = T3D_TOUNITS(0.45f);

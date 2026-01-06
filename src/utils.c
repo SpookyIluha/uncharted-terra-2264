@@ -156,3 +156,21 @@ bool collideAABB(
 
     return true;
 }
+
+void temporal_dither(int frameidx){
+    // temporal dithering to restore as much as possible of True Color
+    switch(frameidx % 4){
+        case 0:
+            rdpq_mode_dithering(DITHER_SQUARE_INVSQUARE);
+            break;
+        case 1:
+            rdpq_mode_dithering(DITHER_NOISE_NOISE);
+            break;
+        case 2:
+            rdpq_mode_dithering(DITHER_NOISE_NOISE);
+            break;
+        case 3:
+            rdpq_mode_dithering(DITHER_BAYER_BAYER);
+            break;
+    }
+}

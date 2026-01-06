@@ -11,6 +11,29 @@ void fm_vec3_dir_from_euler(fm_vec3_t *out, const fm_vec3_t *euler) {
     out->y = sin(euler->x);
 }
 
+void fm_vec3_euler_from_dir(fm_vec3_t *out, const fm_vec3_t *dir) {
+    // Normalize the direction vector first
+    fm_vec3_t normalized = *dir;
+    float len = fm_vec3_len(&normalized);
+    if (len > 0.0001f) {
+        fm_vec3_norm(&normalized, &normalized);
+    } else {
+        // Default direction if vector is too small
+        normalized = (fm_vec3_t){{0, 0, -1}};
+    }
+    
+    // Pitch (x rotation): asin(y)
+    out->x = asinf(normalized.y);
+    
+    // Yaw (y rotation): atan2(x, z)
+    // From fm_vec3_dir_from_euler: x = -sin(y)*cos(x), z = -cos(y)*cos(x)
+    // So tan(y) = x/z, therefore y = atan2(x, z)
+    out->y = atan2f(normalized.x, normalized.z);
+    
+    // Roll (z rotation) is not used in this camera system
+    out->z = 0;
+}
+
 void camera_transform(camera_t *camera, T3DViewport* viewport)
 {
     fm_vec3_t forward; 

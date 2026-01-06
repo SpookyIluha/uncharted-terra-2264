@@ -29,8 +29,13 @@ typedef struct{
     fm_vec3_t exitposition;
 } traversal_t;
 
+void traversal_update();
+void traversal_fade_update();
+void traversal_fade_draw();
+
 #define MAX_AABB_COLLISIONS 256
 #define MAX_TRAVERSALS 8
+#define TRAVERSAL_FADE_DURATION 1.0f  // Duration of fade from black in seconds
 
 class Level {
     public:
@@ -54,8 +59,11 @@ class Level {
 
         struct{
             bool enabled;
+            bool bloomenabled;
             float tonemappingaverage;
         } hdr;
+
+        sprite_t* bloomsprite;
 
         T3DMWModel skyboxmodel;
         T3DMWModel levelmodel;

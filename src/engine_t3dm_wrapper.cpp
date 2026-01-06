@@ -8,6 +8,9 @@
 #include "engine_t3dm_wrapper.h"
 
 bool T3DMWModel::load(const char* filepath) {
+    if(!transform_fp){
+        transform_fp = (T3DMat4FP*)malloc_uncached(sizeof(T3DMat4FP) * 3); // allocate one matrix for each framebuffer
+    }
     t3d_mat4fp_from_srt(&transform_fp[0],
         {1.0f, 1.0f, 1.0f},
         {0.0f, 0.0f, 0.0f},
@@ -100,7 +103,7 @@ void T3DMWModel::draw() {
         t3d_matrix_push(&transform_fp[FRAME_NUMBER % 3]);
         state = t3d_model_state_create();
         for(const auto& obj : objects) {
-            t3d_model_draw_material(obj.object->material, &state);
+            t3d_model_draw_material(obj.object->material, &state);  
             rdpq_set_tile_size(TILE0, obj.hscroll, obj.vscroll, 1000, 1000);
             switch(obj.fog){
                 case 0:
@@ -134,7 +137,7 @@ void T3DMWModel::draw() {
 
 T3DMWModel::T3DMWModel() {
     model = nullptr;
-    transform_fp = (T3DMat4FP*)malloc_uncached(sizeof(T3DMat4FP) * 3); // allocate one matrix for each framebuffer
+    transform_fp = nullptr;
 }
 
 T3DMWModel::~T3DMWModel() {
@@ -142,9 +145,15 @@ T3DMWModel::~T3DMWModel() {
 }
 
 void T3DMWModel::free() {
+    rspq_wait();
     if (model) {
         t3d_model_free(model);
-        free_uncached(transform_fp);
+        model = nullptr;
+        objects.clear(); // Clear objects vector to prevent stale data
         debugf("T3DMWModel freed\n");
+    }
+    if (transform_fp) {
+        free_uncached(transform_fp);
+        transform_fp = nullptr;
     }
 }
