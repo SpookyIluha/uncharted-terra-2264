@@ -1,6 +1,9 @@
 .directory
 build/
 filesystem/
+reference/
+boxart/
+movies/
 *.z64
 .vscode/
 *.eeprom

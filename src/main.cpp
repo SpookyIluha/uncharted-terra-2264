@@ -1,10 +1,11 @@
 #include <libdragon.h>
+#include <t3d/t3d.h>
 #include "intro.h"
-//#include "engine_gamestatus.h"
-//#include "engine_logic.h"
-//#include "engine_eeprom.h"
-//#include "engine_filesystem.h"
-//#include "engine_setup.h"
+#include "engine_gamestatus.h"
+#include "engine_eeprom.h"
+#include "engine_filesystem.h"
+#include "engine_setup.h"
+#include "mainmenu.h"
 
 void systems_init(){
     debug_init_isviewer();
@@ -14,27 +15,30 @@ void systems_init(){
     //asset_init_compression(3);
     //wav64_init_compression(3);
 
-    audio_init(48000, 4);
+    audio_init(28000, 4);
     mixer_init(24);
 
     rdpq_init();
     timer_init();
     joypad_init();
-    //timesys_init();
+    timesys_init();
     srand(getentropy32());
     register_VI_handler((void(*)())rand);
 
-    //engine_eeprom_init();
-    //engine_eeprom_load_persistent();
-    //filesystem_init();
+    engine_eeprom_init();
+    engine_eeprom_load_persistent();
+    filesystem_init();
+    T3DInitParams t3dparms = {};
+    t3d_init(t3dparms);
 }
 
 int main(void)
 {
     systems_init();
-    libdragon_logo();
-    //check_language_config();
-    //check_memory_expanded();
-    //engine_load_gamedso();
-    //engine_game_start();
+    //libdragon_logo();
+    //movie_play("rom:/movies/intrologo.m1v", NULL, 15);
+    //game_logo();
+    check_language_config();
+    check_memory_expanded();
+    game_start();
 }

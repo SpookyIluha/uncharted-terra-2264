@@ -1,4 +1,5 @@
 #include <libdragon.h>
+#include "utils.h"
 #include "intro.h"
 
 
@@ -159,5 +160,192 @@ void libdragon_logo()
     sprite_free(d3);
     sprite_free(d4);
     wav64_close(&music);
+    display_close();
+}
+
+
+// Number of frame back buffers we reserve.
+// These buffers are used to render the video ahead of time.
+// More buffers help ensure smooth video playback at the cost of more memory.
+#define NUM_DISPLAY 3
+
+// Maximum target audio frequency.
+//
+// Needs to be 48 kHz if Opus audio compression is used.
+// In this example, we are using VADPCM audio compression
+// which means we can use the real frequency of the audio track.
+#define AUDIO_HZ 32000.0f
+
+void movie_play(char* moviefilename, char* audiofilename, float movie_fps)
+{
+	joypad_init();
+
+	yuv_init();
+
+	// Check if the movie is present in the filesystem, so that we can provide
+	// a specific error message.
+	FILE *f = fopen(moviefilename, "rb");
+	assertf(f, "Movie not found %s!", moviefilename);
+	fclose(f);
+
+	// Open the movie using the mpeg2 module and create a YUV blitter to draw it.
+	mpeg2_t* video_track = mpeg2_open(moviefilename);
+
+	int video_width = mpeg2_get_width(video_track);
+	int video_height = mpeg2_get_height(video_track);
+
+	// When playing back a video, there are essentially two options:
+	// 1) Configure a fixed resolution (eg: 320x240), and then make
+	//    the video fit it, with letterboxing if necessary. This is requires
+	//    actually drawing / rescaling the video with RDP and filling the
+	//    rest of the framebuffers with black.
+	// 2) Configure a resolution which exactly matches the video resolution,
+	//     and let VI perform the necessary centering / letterboxing.
+	//
+	// 2 is more efficient for full motion videos because no additional memory
+	// is wasted in framebuffers to hold black pixels, so we go with it.
+
+	display_init((resolution_t){
+			// Initialize a framebuffer resolution which precisely matches the video
+			.width = video_width, .height = video_height,
+			.interlaced = INTERLACE_HALF,
+			// Set the desired aspect ratio to that of the video. By default,
+			// display_init would force 4:3 instead, which would be wrong here.
+			// eg: if a video is 320x176, we want to display it as 16:9-ish.
+			.aspect_ratio = (float)video_width / video_height,
+			// Uncomment this line if you want to have some additional black
+			// borders to fully display the video on real CRTs.
+			// .overscan_margin = VI_CRT_MARGIN,
+		},
+		// 32-bit display mode is mandatory for video playback.
+		DEPTH_16_BPP,
+		NUM_DISPLAY, GAMMA_NONE,
+		// Activate bilinear filtering while rescaling the video
+		FILTERS_DEDITHER
+	);
+
+	yuv_blitter_t yuv = yuv_blitter_new_fmv(
+		// Resolution of the video we expect to play.
+		// Video needs to have a width divisible by 32 and a height divisible by 16.
+		video_width, video_height,
+		// Set blitter's output area to our entire display. Given the above
+		// initialization, this will actually match the video width/height, but
+		// if we instead opted for a fixed resolution (eg: 320x240), it would be
+		// the YUV blitter that would letterbox the video by adding black borders
+		// where necessary.
+		display_get_width(), display_get_height(),
+		// You can further customize YUV options through this parameter structure
+		// if necessary.
+		&(yuv_fmv_parms_t) {}
+	);
+
+	// Engage the fps limiter to ensure proper video pacing.
+	float fps = mpeg2_get_framerate(video_track);
+    
+    if(movie_fps > 0){
+        fps = movie_fps;
+    }
+
+	display_set_fps_limit(fps);
+
+
+	// Open the audio track and start playing it in channel 0.
+	wav64_t audio_track;
+    if(audiofilename){
+        FILE *f = fopen(audiofilename, "rb");
+        assertf(f, "Audio not found, but requested %s!", audiofilename);
+        fclose(f);
+
+        wav64_open(&audio_track, audiofilename);
+        mixer_ch_play(0, &audio_track.wave);
+    }
+
+
+	int nframes = 0;
+
+	while (1)
+	{
+		mixer_throttle(AUDIO_HZ / fps);
+
+		if (!mpeg2_next_frame(video_track))
+		{
+			break;
+		}
+
+		// This polls the mixer to try and play the next chunk of audio, if available.
+		// We call this function twice during the frame to make sure the audio never stalls.
+		mixer_try_play();
+
+		rdpq_attach(display_get(), NULL);
+
+		// Get the next video frame and feed it into our previously set up blitter.
+		yuv_frame_t frame = mpeg2_get_frame(video_track);
+        rdpq_mode_dithering(DITHER_SQUARE_INVSQUARE);
+		yuv_blitter_run(&yuv, &frame);
+
+		rdpq_detach_show();
+
+		nframes++;
+
+		mixer_try_play();
+	}
+
+    rspq_wait();
+
+    mpeg2_close(video_track);
+    yuv_blitter_free(&yuv);
+    if(audiofilename){
+        wav64_close(&audio_track);
+    }
+    display_close();
+}
+
+void game_logo(){
+    sprite_t *logo = sprite_load("rom:/textures/intro/gamelogo.i8.sprite");
+    surface_t logosurf = sprite_get_pixels(logo);
+
+	display_init((resolution_t){
+			.width = 640, .height = 240,
+			.interlaced = INTERLACE_HALF,
+			.aspect_ratio = (float)640 / 240,
+		},
+		DEPTH_16_BPP,
+		3, GAMMA_NONE,
+		FILTERS_RESAMPLE
+	);
+
+    float time = 6.0f; // seconds to display logo
+    int xstart, ystart;
+    xstart = 320 - logo->width / 2;
+    ystart = 120 - logo->height / 2;
+    while(time > 0.0f){
+
+        float alpha = 1;
+        if(time >= 4) alpha = ((6.0 - time) / 2.0f);
+        if(time <= 2) alpha = (time / 2.0f);
+        uint8_t col = (alpha) * 255;
+        alpha = 1 - alpha;
+
+        surface_t *fb = display_get();
+        rdpq_attach_clear(fb, NULL);
+
+        rdpq_set_mode_standard();
+        rdpq_mode_combiner(RDPQ_COMBINER1((TEX0,0,PRIM,0),(0,0,0,1)));
+        rdpq_set_prim_color(RGBA32(col,col,col,255));
+
+        for(int i = 0; i < logo->height; i++){
+            surface_t surf = surface_make_sub(&logosurf, 0, i, logosurf.width, 1);
+            int random = frandr(-alpha*40, alpha*40);
+            rdpq_tex_blit(&surf, xstart + random, ystart + i, NULL);
+        }
+
+        rdpq_detach_show();
+
+        time -= display_get_delta_time();
+    }
+
+    rspq_wait();
+
+    sprite_free(logo);
     display_close();
 }

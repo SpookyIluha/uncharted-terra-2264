@@ -1,10 +1,9 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <unistd.h>
 #include <time.h>
 #include <libdragon.h>
-
+#include <t3d/t3d.h>
 // Various misc types
 
 #ifdef __cplusplus
@@ -20,6 +19,7 @@ typedef enum buffers_s{
 typedef struct{
     float x,y;
 } pos2d;
+
 
 #ifdef __cplusplus
 }

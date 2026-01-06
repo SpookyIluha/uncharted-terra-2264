@@ -14,10 +14,9 @@ include $(N64_INST)/include/t3d.mk
 include assetflags.mk
 
 SRCS = $(shell find $(SOURCE_DIR)/ -type f -name '*.c') \
-	   $(shell find $(SOURCE_DIR)/ -type f -name '*.cpp')
-
-SRCS_DSO = $(shell find $(SOURCE_DIR)/$(GAME_SOURCE_DIR)/ -type f -name '*.c') \
-	       $(shell find $(SOURCE_DIR)/$(GAME_SOURCE_DIR)/ -type f -name '*.cpp')
+	   $(shell find $(SOURCE_DIR)/ -type f -name '*.cpp') \
+		$(shell find $(SOURCE_DIR)/$(GAME_SOURCE_DIR)/ -type f -name '*.c') \
+	    $(shell find $(SOURCE_DIR)/$(GAME_SOURCE_DIR)/ -type f -name '*.cpp')
 
 IMAGE_LIST = $(shell find $(ASSETS_DIR)/models/ -type f -name '*.png') \
 			 $(shell find $(ASSETS_DIR)/textures/ -type f -name '*.png')
@@ -26,7 +25,8 @@ SOUND_LIST  = $(shell find $(ASSETS_DIR)/sfx/ -type f -name '*.wav')
 MUSIC_LIST  = $(shell find $(ASSETS_DIR)/music/ -type f -name '*.wav')
 XM_LIST  	= $(shell find $(ASSETS_DIR)/music/ -type f -name '*.xm')
 MODELS_LIST = $(shell find $(ASSETS_DIR)/models/ -type f -name '*.glb')
-TEXT_LIST   = $(shell find $(ASSETS_DIR)/locale/ -type f -name '*.*')
+TEXT_LIST   = $(shell find $(ASSETS_DIR)/scripts/ -type f -name '*.*')
+MOVIES_LIST   = $(shell find $(ASSETS_DIR)/movies/ -type f -name '*.m1v')
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(IMAGE_LIST:%.png=%.sprite))
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(FONT_LIST:%.ttf=%.font64))
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(SOUND_LIST:%.wav=%.wav64))
@@ -34,6 +34,7 @@ ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(MUSIC_LIST:%.wav=%.wav6
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(XM_LIST:%.xm=%.xm64))
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(MODELS_LIST:%.glb=%.t3dm))
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(TEXT_LIST))
+ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(MOVIES_LIST))
 
 N64_CFLAGS += -std=gnu2x
 N64_C_AND_CXX_FLAGS += -I $(SOURCE_DIR) -I $(SOURCE_DIR)/$(GAME_SOURCE_DIR) -Wno-error=write-strings -Wno-error=narrowing -Wno-narrowing -Wno-write-strings -ftrivial-auto-var-init=zero
@@ -43,12 +44,12 @@ all: $(NAME).z64
 $(FILESYSTEM_DIR)/textures/%.sprite: $(ASSETS_DIR)/textures/%.png
 	@mkdir -p $(dir $@)
 	@echo "    [SPRITE] $@"
-	$(N64_MKSPRITE) $(MKSPRITE_FLAGS) --compress 1 -o $(dir $@) "$<"
+	$(N64_MKSPRITE) --format AUTO $(MKSPRITE_FLAGS) --compress 1 -o $(dir $@) "$<"
 
 $(FILESYSTEM_DIR)/models/%.sprite: $(ASSETS_DIR)/models/%.png
 	@mkdir -p $(dir $@)
 	@echo "    [SPRITE] $@"
-	$(N64_MKSPRITE) $(MKSPRITE_FLAGS) --compress 1 -o $(dir $@) "$<"
+	$(N64_MKSPRITE) $(MKSPRITE_FLAGS) --mipmap NONE -v --compress 1 -o $(dir $@) "$<"
 
 $(FILESYSTEM_DIR)/fonts/%.font64: $(ASSETS_DIR)/fonts/%.ttf
 	@mkdir -p $(dir $@)
@@ -58,7 +59,7 @@ $(FILESYSTEM_DIR)/fonts/%.font64: $(ASSETS_DIR)/fonts/%.ttf
 $(FILESYSTEM_DIR)/sfx/%.wav64: $(ASSETS_DIR)/sfx/%.wav
 	@mkdir -p $(dir $@)
 	@echo "    [SFX] $@"
-	$(N64_AUDIOCONV) $(AUDIOCONV_FLAGS) --wav-compress 1 -o $(dir $@) "$<"
+	$(N64_AUDIOCONV) $(AUDIOCONV_FLAGS) --wav-compress 1,bits=3 --wav-resample 28000 -o $(dir $@) "$<"
 
 $(FILESYSTEM_DIR)/music/%.wav64: $(ASSETS_DIR)/music/%.wav
 	@mkdir -p $(dir $@)
@@ -76,13 +77,18 @@ $(FILESYSTEM_DIR)/%.t3dm: assets/%.glb
 	$(T3D_GLTF_TO_3D) "$<" $@
 	$(N64_BINDIR)/mkasset -c 2 -o $(FILESYSTEM_DIR) $@
 
-$(FILESYSTEM_DIR)/locale/%: $(ASSETS_DIR)/locale/%
+$(FILESYSTEM_DIR)/scripts/%: $(ASSETS_DIR)/scripts/%
 	@mkdir -p $(dir $@)
 	@echo "    [TEXT] $@"
 	cp "$<" $@
 
+$(FILESYSTEM_DIR)/movies/%: $(ASSETS_DIR)/movies/%
+	@mkdir -p $(dir $@)
+	@echo "    [M1V] $@"
+	cp "$<" $@
+
 $(BUILD_DIR)/$(NAME).dfs: $(ASSETS_LIST)
-$(BUILD_DIR)/$(NAME).elf: $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/%.cpp=$(BUILD_DIR)/%.o)
+$(BUILD_DIR)/$(NAME).elf: $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/%.cpp=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/$(GAME_SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/$(GAME_SOURCE_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
 $(NAME).z64: N64_ROM_TITLE=$(ROM_NAME)
 $(NAME).z64: $(BUILD_DIR)/$(NAME).dfs

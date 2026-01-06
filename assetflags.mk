@@ -1,8 +1,7 @@
 #a list of custom asset flags to use when converting to Libradgon formats
 
-filesystem/fonts/Kanit-Black.font64: 					MKFONT_FLAGS+= --size 18  --range 20-7F --range 80-FF --range 100-17F --range 180-24F
-filesystem/fonts/Kanit-BlackItalic.font64: 				MKFONT_FLAGS+= --size 42  --range 20-7F --range 80-FF --range 100-17F --range 180-24F
-filesystem/fonts/Kanit-BlackItalic_small.font64: 		MKFONT_FLAGS+= --size 18  --range 20-7F --range 80-FF --range 100-17F --range 180-24F
+filesystem/fonts/neuropolitical.font64: 				MKFONT_FLAGS+= --size 14  --range 20-7F --range 80-FF --range 100-17F
+filesystem/fonts/recharge.font64: 						MKFONT_FLAGS+= --size 14  --range 20-7F --range 80-FF --range 100-17F
 filesystem/fonts/LuckiestGuy-Regular.font64: 			MKFONT_FLAGS+= --size 26  
 filesystem/fonts/RobotoCondensed-Bold.font64: 			MKFONT_FLAGS+= --size 24  
 filesystem/fonts/UbuntuMono-Bold.font64: 				MKFONT_FLAGS+= --size 14  
