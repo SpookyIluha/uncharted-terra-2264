@@ -10,7 +10,8 @@ extern "C"{
 #endif
 
 #define MAX_FONTS 16
-#define MAX_ENTITIES 256
+#define MAX_STYLES 16
+#define MAX_ENTITIES 512
 #define SHORTSTR_LENGTH 32
 #define LONGSTR_LENGTH 64
 #define MAX_INVENTORY_SLOTS 64  
@@ -50,7 +51,7 @@ typedef struct gamestate_s{
 
     struct{
         struct {
-            uint32_t flags;
+            uint16_t flags;
         } entities[MAX_ENTITIES];
 
         char   playername[SHORTSTR_LENGTH];
@@ -66,6 +67,7 @@ typedef struct gamestate_s{
         } settings;
 
         uint8_t inventory[MAX_INVENTORY_SLOTS];
+        uint64_t journalscollectedbitflag;
     } game;
 
     struct{
@@ -73,6 +75,7 @@ typedef struct gamestate_s{
     } scripts;
 
 } gamestate_t;
+static_assert(sizeof(gamestate_t) <= 2048, "gamestate exceeds EEPROM size");
 
 typedef enum{
     SAVE_NONE = 0,
@@ -116,8 +119,14 @@ typedef struct gamestatus_s{
         int mainfontselected;
         int titlefont;
         int titlefontstyle;
+        int subtitlefont;
+        int subtitlefontstyle;
 
-        rdpq_font_t* fonts[MAX_FONTS];
+        struct{
+            rdpq_font_t* font;
+            rdpq_fontstyle_t styles[MAX_STYLES];
+        } fonts[MAX_FONTS];
+
         int fontcount;
     } fonts;
 

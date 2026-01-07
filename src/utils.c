@@ -99,6 +99,7 @@ fm_vec3_t vec_upy_to_upz_scl(fm_vec3_t* in)
     return out;
 }
 
+
 void transform_upz_to_upy(fm_vec3_t* pos, fm_vec3_t* scale, fm_vec3_t* outpos, fm_vec3_t* outscale){
     *outpos = vec_upz_to_upy(pos);
     *outscale = vec_upz_to_upy_scl(scale);

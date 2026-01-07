@@ -88,7 +88,7 @@ $(FILESYSTEM_DIR)/movies/%: $(ASSETS_DIR)/movies/%
 	cp "$<" $@
 
 $(BUILD_DIR)/$(NAME).dfs: $(ASSETS_LIST)
-$(BUILD_DIR)/$(NAME).elf: $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/%.cpp=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/$(GAME_SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/$(GAME_SOURCE_DIR)/%.cpp=$(BUILD_DIR)/%.o)
+$(BUILD_DIR)/$(NAME).elf: $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/%.cpp=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/$(GAME_SOURCE_DIR)/%.c=$(BUILD_DIR)/$(GAME_SOURCE_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/$(GAME_SOURCE_DIR)/%.cpp=$(BUILD_DIR)/$(GAME_SOURCE_DIR)/%.o)
 
 $(NAME).z64: N64_ROM_TITLE=$(ROM_NAME)
 $(NAME).z64: $(BUILD_DIR)/$(NAME).dfs

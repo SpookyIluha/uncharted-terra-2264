@@ -164,14 +164,7 @@ void game_draw(){
     t3d_light_set_count(0);
 
     rdpq_set_fog_color(RGBA32(255,255,255,255));
-    switch(FRAME_NUMBER % 2){
-        case 0:
-            rdpq_mode_dithering(DITHER_SQUARE_INVSQUARE);
-            break;
-        case 1:
-            rdpq_mode_dithering(DITHER_BAYER_BAYER);
-            break;
-    }
+    temporal_dither(FRAME_NUMBER);
     model.draw();
 
   }

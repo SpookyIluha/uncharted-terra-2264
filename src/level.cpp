@@ -13,8 +13,16 @@
 #include "level.h"
 #include "player.h"
 #include "camera.h"
+#include "game/entity.h"
 
 Level currentlevel;
+
+void change_level_console_command(std::vector<std::string> args);
+
+void engine_level_init(){
+    register_game_console_command("change_level", change_level_console_command);
+}
+
 
 uint32_t state = 777;
 
@@ -24,7 +32,7 @@ char custom_rand()
    return state >> 24;
 }
 
-// string to vec, also +Z to +Y
+// string to vec
 fm_vec3_t string_to_vec(const std::string& input)
 {
     const char* str = input.c_str();
@@ -223,9 +231,8 @@ void Level::load(char* levelname){
         int enabledcollisioncount = 0;
         for(int i = 0; i < MAX_AABB_COLLISIONS; i++) {
             fm_vec3_t center, half_extents;
-            center = string_to_vec(ini["Collision"]["colpos" + std::to_string(i)] | "0 0 0");
-            half_extents = string_to_vec(ini["Collision"]["colscl" + std::to_string(i)] | "0 0 0");
-            transform_upz_to_upy(&center, &half_extents, &aabb_collisions[i].center, &aabb_collisions[i].half_extents);
+            aabb_collisions[i].center = string_to_vec(ini["Collision"]["colpos" + std::to_string(i)] | "0 0 0");
+            aabb_collisions[i].half_extents = string_to_vec(ini["Collision"]["colscl" + std::to_string(i)] | "0 0 0");
             aabb_collisions[i].enabled = ini["Collision"]["colenb" + std::to_string(i)] | false;
             if(aabb_collisions[i].enabled) {
                 enabledcollisioncount++;
@@ -251,14 +258,12 @@ void Level::load(char* levelname){
             assertf(traversals[traversalcount].destinationlevel, "Traversal %s: destination level not specified", pair.name.c_str());
 
             fm_vec3_t center, half_extents;
-            center = string_to_vec(pair.section["position"] | "0 0 0");
-            half_extents = string_to_vec(pair.section["scale"] | "0 0 0");
-            transform_upz_to_upy(&center, &half_extents, &traversals[traversalcount].collision.center, &traversals[traversalcount].collision.half_extents);
+            traversals[traversalcount].collision.center = string_to_vec(pair.section["position"] | "0 0 0");
+            traversals[traversalcount].collision.half_extents = string_to_vec(pair.section["scale"] | "0 0 0");
             traversals[traversalcount].collision.enabled = pair.section["enabled"] | true;
             traversals[traversalcount].interact = pair.section["interact"] | false;
 
             fm_vec3_t exitposition = string_to_vec(pair.section["exitposition"] | "0 0 0");
-            traversals[traversalcount].exitposition = vec_upz_to_upy(&exitposition);
 
             traversalcount++;
             assertf(traversalcount < MAX_TRAVERSALS, "Level %s: too many traversals defined (%i<%i)", levelname, traversalcount, MAX_TRAVERSALS);
@@ -266,6 +271,12 @@ void Level::load(char* levelname){
         debugf("Level %s: %d traversals loaded\n", levelname, traversalcount);
 
     }
+    
+    // Load entities
+    {
+        EntitySystem::load_entities_from_ini(levelname);
+    }
+    
     debugf("Level '%s' loaded successfully\n", levelname);
 }
 
@@ -328,6 +339,7 @@ void Level::free(){
         sprite_free(bloomsprite);
         bloomsprite = nullptr;
     }
+    EntitySystem::clear_all(); // Clear all entities when level is freed
 }
 
 Level::~Level(){
@@ -353,6 +365,14 @@ static traversal_t* find_traversal_by_name(Level* level, const char* name) {
 // Helper function to change level and position player at destination
 static void change_level(const char* levelname, const char* destinationname) {
     rspq_wait();
+    // Fade out
+    for(int i = 0; i < 2; i++){
+        rdpq_attach(display_get(), NULL);
+        rdpq_disable_interlaced();
+        rdpq_clear(RGBA32(0,0,0,255));
+        rdpq_detach_show();
+    }
+
     extern player_t player;
     
     char destinationnamebuffer[SHORTSTR_LENGTH];
@@ -394,7 +414,7 @@ static void change_level(const char* levelname, const char* destinationname) {
     // Update camera far plane to match new level's draw distance
     player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
     
-    debugf("Level change complete: '%s' -> '%s'\n", currentlevel.name, levelnamebuffer);
+    debugf("Level change complete\n");
     debugf("Player position: (%.2f, %.2f, %.2f) -> (%.2f, %.2f, %.2f)\n",
            old_pos.x, old_pos.y, old_pos.z,
            player.position.x, player.position.y, player.position.z);
@@ -402,6 +422,14 @@ static void change_level(const char* levelname, const char* destinationname) {
     // Start fade from black
     traversal_fade_time = TRAVERSAL_FADE_DURATION;
     traversal_fade_active = true;
+}
+
+void change_level_console_command(std::vector<std::string> args) {
+    if(args.size() < 2) {
+        debugf("Usage: change_level <levelname> <destinationname>\n");
+        return;
+    }
+    change_level(args[0].c_str(), args[1].c_str());
 }
 
 void traversal_update() {

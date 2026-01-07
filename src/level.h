@@ -29,6 +29,8 @@ typedef struct{
     fm_vec3_t exitposition;
 } traversal_t;
 
+void engine_level_init();
+
 void traversal_update();
 void traversal_fade_update();
 void traversal_fade_draw();

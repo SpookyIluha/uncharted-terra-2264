@@ -6,6 +6,9 @@
 #include "engine_filesystem.h"
 #include "engine_setup.h"
 #include "mainmenu.h"
+#include "level.h"
+#include "subtitles.h"
+#include "game/entity_register.h"
 
 void systems_init(){
     debug_init_isviewer();
@@ -25,11 +28,15 @@ void systems_init(){
     srand(getentropy32());
     register_VI_handler((void(*)())rand);
 
+    T3DInitParams t3dparms = {};
+    t3d_init(t3dparms);
+
     engine_eeprom_init();
     engine_eeprom_load_persistent();
     filesystem_init();
-    T3DInitParams t3dparms = {};
-    t3d_init(t3dparms);
+    engine_level_init();
+    entity_register_all();
+    subtitles_init();
 }
 
 int main(void)

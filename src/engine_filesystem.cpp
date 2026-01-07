@@ -54,13 +54,15 @@ void engine_config_load(){
     gamestatus.fonts.mainfontselected  =  ini["Fonts"]["mainfontselected"]    | 0;
     gamestatus.fonts.titlefont      =  ini["Fonts"]["titlefont"]        | 1;
     gamestatus.fonts.titlefontstyle =  ini["Fonts"]["titlefontstyle"]   | 0;
+    gamestatus.fonts.subtitlefont      =  ini["Fonts"]["subtitlefont"]        | 1;
+    gamestatus.fonts.subtitlefontstyle =  ini["Fonts"]["subtitlefontstyle"]   | 0;
 
     if(gamestatus.fonts.fontcount){
         for(int i = 1; i <= gamestatus.fonts.fontcount; i++){
             rdpq_text_unregister_font(i);
-            if(gamestatus.fonts.fonts[i - 1]) {
-                rdpq_font_free(gamestatus.fonts.fonts[i - 1]); 
-                gamestatus.fonts.fonts[i - 1] = NULL;
+            if(gamestatus.fonts.fonts[i - 1].font) {
+                rdpq_font_free(gamestatus.fonts.fonts[i - 1].font); 
+                gamestatus.fonts.fonts[i - 1].font = NULL;
             }
         }
     }
@@ -74,8 +76,8 @@ void engine_config_load(){
             if(!font.empty()){
                 std::string fontfn = filesystem_getfn(DIR_FONT, (font).c_str());
                 debugf("Font %i: %s\n", fontid,fontfn.c_str() );
-                gamestatus.fonts.fonts[fontid - 1] = rdpq_font_load(fontfn.c_str());
-                rdpq_text_register_font(fontid, gamestatus.fonts.fonts[fontid - 1]);
+                gamestatus.fonts.fonts[fontid - 1].font = rdpq_font_load(fontfn.c_str());
+                rdpq_text_register_font(fontid, gamestatus.fonts.fonts[fontid - 1].font);
                 gamestatus.fonts.fontcount = fontid;
 
                 int styleid = 0;
@@ -87,7 +89,8 @@ void engine_config_load(){
                     color2 = ini["Fonts"][keyfontcoloroutline] | 0xFEFEFEFE;
                     debugf("Font %i Style %i: %08lx %08lx\n", fontid, styleid, color1, color2);
                     rdpq_fontstyle_t style; style.color = color_from_packed32(color1); style.outline_color = color_from_packed32(color2);
-                    rdpq_font_style(gamestatus.fonts.fonts[fontid - 1], styleid, &style);
+                    rdpq_font_style(gamestatus.fonts.fonts[fontid - 1].font, styleid, &style);
+                    gamestatus.fonts.fonts[fontid - 1].styles[styleid] = style;
                     styleid++;
                 } while (color1 != 0xFAFAFAFE);
             }

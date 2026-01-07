@@ -11,7 +11,8 @@
 #include "level.h"
 #include "player.h"
 #include "playtimelogic.h"
-
+#include "subtitles.h"
+#include "game/entity.h"
 
 
 void playtimelogic(){
@@ -32,13 +33,18 @@ void playtimelogic(){
   player_init();
   player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
 
+  subtitles_add("Test subtitle.", 8.0f);
+  
+
   while(true){
     timesys_update();
     joypad_poll();
     audioutils_mixer_update();
     player_update();
+    subtitles_update();
     traversal_update(); // Check for level transitions
     traversal_fade_update(); // Update fade from black
+    EntitySystem::update_all(); // Update all entities
     // ======== Update ======== //
     // cycle through FP matrices to avoid overwriting what the RSP may still need to load
     frameIdx = (frameIdx + 1) % 3;
@@ -61,7 +67,9 @@ void playtimelogic(){
     rdpq_mode_antialias(AA_REDUCED);
     rdpq_mode_zmode(ZMODE_INTERPENETRATING);
     currentlevel.draw();
+    EntitySystem::draw_all(); // Draw all entities
     player_draw_ui();
+    subtitles_draw();
     traversal_fade_draw(); // Draw fade from black overlay
     rdpq_detach_show();
   }
