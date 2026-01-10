@@ -4,7 +4,7 @@
 
 #include "entity.h"
 
-#define EXAMPLEENTITY_TYPE_NAME ("ExampleEntity")
+#define EXAMPLE_ENTITY_TYPE_NAME ("ExampleEntity")
 
 // Example entity class
 class ExampleEntity : public Entity {

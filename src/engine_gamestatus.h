@@ -66,8 +66,12 @@ typedef struct gamestate_s{
             float deadzone;
         } settings;
 
-        uint8_t inventory[MAX_INVENTORY_SLOTS];
-        uint64_t journalscollectedbitflag;
+        struct{
+            uint8_t item_id;
+            uint8_t item_count;
+        } inventory[MAX_INVENTORY_SLOTS];
+
+        uint32_t journalscollectedbitflag;
     } game;
 
     struct{

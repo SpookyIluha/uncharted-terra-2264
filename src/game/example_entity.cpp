@@ -3,7 +3,7 @@
 #include <libdragon.h>
 
 ExampleEntity::ExampleEntity(const std::string& name, int id)
-    : Entity(name, EXAMPLEENTITY_TYPE_NAME, id), custom_value(0.0f) {
+    : Entity(name, EXAMPLE_ENTITY_TYPE_NAME, id), custom_value(0.0f) {
 
     // Register functions that other entities can call
 

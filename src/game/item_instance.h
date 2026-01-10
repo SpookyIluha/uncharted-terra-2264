@@ -1,27 +1,30 @@
-#ifndef JOURNAL_ENTRY_H
-#define JOURNAL_ENTRY_H
+#ifndef ITEM_INSTANCE_H
+#define ITEM_INSTANCE_H
 
 #include "entity.h"
 #include "../engine_t3dm_wrapper.h"
 
-#define JOURNAL_ENTRY_TYPE_NAME ("JournalEntry")
-#define MAX_JOURNAL_ENTRIES 32
+#define ITEM_INSTANCE_TYPE_NAME ("ItemInstance")
 
-int journals_collected_count();
-int get_collected_journal_entry_id_by_collected_index(int id);
+#define ITEM_INSTANCE_PICKEDUP_BIT (1<<3)
+#define MAX_ITEMS 256
 
-extern tortellini::ini journals;
+extern tortellini::ini itemsdict;
+extern std::string items_names[MAX_ITEMS];
+
+const tortellini::ini::section& get_item_info_by_id(int id);
+int items_check_combine_recepies(uint8_t item1_id, uint8_t item2_id);
 
 // Example entity class
-class JournalEntry : public Entity {
+class ItemInstance : public Entity {
 private:
-    int entry_id;
+    int item_id;
     bool pickedup;
     T3DMWModel journalmodel;
 
 public:
-    JournalEntry(const std::string& name, int id);
-    virtual ~JournalEntry() = default;
+    ItemInstance(const std::string& name, int id);
+    virtual ~ItemInstance() = default;
 
     // Implement required virtual functions
     virtual void load_from_ini(const tortellini::ini::section& section) override;

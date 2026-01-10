@@ -37,20 +37,17 @@ bool Entity::console_command_invoke(const std::string& func_name, const std::vec
 std::map<std::string, EntityFactory> EntitySystem::factories;
 std::map<int, Entity*> EntitySystem::entities;
 
-void EntitySystem::register_entity_type(const std::string& class_type, void (*onregister)(), EntityFactory factory) {
+void EntitySystem::register_entity_type(const std::string& class_type, EntityFactory factory) {
     factories[class_type] = factory;
-    onregister();
     debugf("Registered entity type: %s\n", class_type.c_str());
 }
 
 Entity* EntitySystem::create_entity(const std::string& class_type, const std::string& name, int id) {
     auto it = factories.find(class_type);
-    if (it == factories.end()) {
-        debugf("ERROR: Unknown entity class type: %s\n", class_type.c_str());
-        return nullptr;
-    }
-    
-    // Use provided ID or generate new one
+
+    assertf(it != factories.end(), "Unknown entity class type: %s. Did you forget to register it?\n", class_type.c_str());
+
+    // Use provided ID
     assertf(id >= 0 && id < MAX_ENTITIES, "Entity ID must be valid: %d >= 0 && %d < %d", id, id, MAX_ENTITIES);
     
     Entity* entity = it->second(name, id);
@@ -110,22 +107,23 @@ void EntitySystem::load_entities_from_ini(const std::string& levelname) {
         // Load transform if provided
         {
             std::string pos_str = section["position"] | "0 0 0";
-            entity->get_transform_mutable().position = string_to_vec(pos_str);
+            entity->get_transform_mutable().position = string_to_vec(pos_str.c_str());
         }
         {
             std::string rot_str = section["rotation"] | "0 0 0";
-            entity->get_transform_mutable().rotation = string_to_vec(rot_str);
-        }
+            entity->get_transform_mutable().rotation = string_to_quat(rot_str.c_str());
+        }   
         {
             std::string scale_str = section["scale"] | "1 1 1";
-            entity->get_transform_mutable().scale = string_to_vec(scale_str);
+            entity->get_transform_mutable().scale = string_to_vec(scale_str.c_str());
         }
         
         // Load entity-specific data from INI
         entity->load_from_ini(ini[section_name]);
-
-        entity->load_from_eeprom(gamestatus.state.game.entities[id].flags);
-        entity->enabled = (gamestatus.state.game.entities[id].flags & 0x1) == 1? true : false;
+        if((gamestatus.state.game.entities[id].flags & ENTITY_HAS_EEPROM_DATA)){
+            entity->load_from_eeprom(gamestatus.state.game.entities[id].flags);
+            entity->enabled = (gamestatus.state.game.entities[id].flags & ENTITY_IS_ENABLED)? true : false;
+        }
         
         // Initialize the entity
         entity->init();
@@ -175,7 +173,7 @@ void EntitySystem::clear_all() {
 void EntitySystem::save_all_to_eeprom() {
     for (auto& pair : entities) {
         Entity* entity = pair.second;
-        gamestatus.state.game.entities[entity->get_id()].flags = entity->save_to_eeprom() | (entity->enabled? 1 : 0);
+        gamestatus.state.game.entities[entity->get_id()].flags = entity->save_to_eeprom() | (entity->enabled? ENTITY_IS_ENABLED : 0) | ENTITY_HAS_EEPROM_DATA;
     }
 }
 

@@ -24,6 +24,8 @@ typedef struct {
 
     T3DVec3 camPos_off;
     T3DVec3 camTarget_off;
+
+    T3DVec3 forward;
 } camera_t;
 
 extern void fm_vec3_dir_from_euler(fm_vec3_t *out, const fm_vec3_t *euler);

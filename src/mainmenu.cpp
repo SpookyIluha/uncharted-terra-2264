@@ -173,7 +173,7 @@ void game_draw(){
 void game_menu(){
     sprite_t* bg = sprite_load(filesystem_getfn(DIR_IMAGE, "menu/gamelogo.ia8").c_str() );
     surface_t bgsurf = sprite_get_pixels(bg);
-    sprite_t* button_a = sprite_load(filesystem_getfn(DIR_IMAGE, "menu/button_a.rgba32").c_str());
+    sprite_t* button_a = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/button_a.rgba32").c_str());
 
     viewport = t3d_viewport_create_buffered(3);
     model = T3DMWModel();

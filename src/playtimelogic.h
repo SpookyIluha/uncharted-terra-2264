@@ -8,6 +8,10 @@ extern "C"{
 /// @brief Main gameplay loop
 extern void playtimelogic();
 
+extern void playtimelogic_savegame();
+extern void playtimelogic_loadgame();
+extern void playtimelogic_gotomainmenu();
+
 #ifdef __cplusplus
 }
 #endif

@@ -69,3 +69,29 @@ bool execute_console_command(const std::string& command) {
     it->second(args);
     return true;
 }
+
+static std::map<std::string, std::map<std::string, EntityConsoleCommand>> entity_console_commands;
+
+void register_entity_console_command(const std::string& class_type, const std::string& func_name, EntityConsoleCommand func) {
+    entity_console_commands[class_type][func_name] = func;
+    debugf("Registered entity console command '%s' for type '%s'\n", func_name.c_str(), class_type.c_str());
+}
+
+bool invoke_entity_console_command(Entity* entity, const std::string& func_name, const std::vector<std::string>& args) {
+    if (!entity) return false;
+    
+    // Try specific class type
+    std::string type = entity->get_class_type();
+    if (entity_console_commands.count(type) && entity_console_commands[type].count(func_name)) {
+        entity_console_commands[type][func_name](entity, args);
+        return true;
+    }
+    
+    // Try base "Entity" type
+    if (entity_console_commands.count("Entity") && entity_console_commands["Entity"].count(func_name)) {
+        entity_console_commands["Entity"][func_name](entity, args);
+        return true;
+    }
+
+    return false;
+}

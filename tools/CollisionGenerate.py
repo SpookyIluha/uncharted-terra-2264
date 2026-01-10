@@ -1,4 +1,9 @@
 import bpy
+import math
+from mathutils import Matrix, Euler, Vector
+
+# Conversion rotation: -90 degrees around X (Z-up -> Y-up)
+conv_rot = Matrix.Rotation(-math.pi / 2.0, 4, 'X')
 
 # Configuration
 COLLECTION_NAME = "Collision"
@@ -21,10 +26,26 @@ text.write("[Collision]\n\n")
 
 # Iterate over objects in the collection
 for index, obj in enumerate(collection.objects):
+    
+    # Get world matrix
+    world_mat = obj.matrix_world.copy()
+
+    # Apply Z-up -> Y-up conversion
+    converted_mat = conv_rot @ world_mat
+    
+    # Decompose converted transform
+    loc, rot, scale = converted_mat.decompose()
+    eulerrot = rot.to_euler('XYZ')
+    converted_scale = Vector((
+        scale.x,   # X stays X
+        scale.z,   # Z -> Y
+        scale.y    # Y -> Z
+    ))
+    
     # World-space position
-    pos = obj.matrix_world.translation
+    pos = loc
     # Object scale
-    scl = obj.scale
+    scl = converted_scale
     # Visibility state
     enabled = obj.visible_get()
     

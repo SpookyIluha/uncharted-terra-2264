@@ -32,20 +32,6 @@ char custom_rand()
    return state >> 24;
 }
 
-// string to vec
-fm_vec3_t string_to_vec(const std::string& input)
-{
-    const char* str = input.c_str();
-    char* end;
-
-    fm_vec3_t result;
-    result.x = std::strtof(str, &end);
-    result.y = std::strtof(end, &end);
-    result.z = std::strtof(end, &end);
-
-    return result;
-}
-
 float exposure = 1.0f;
 float average_brightness = 0;
 
@@ -152,11 +138,12 @@ void bloom_draw(void* framebuffer, sprite_t* bloomsprite){
             brightness *= 8;
 
             col.a = brightness;
+            float alpha = (float)brightness * (1.0/200.0);
 
             rdpq_set_prim_color(col);
-            int boxx = x * BLOOM_SIZE + offsetx - (BLOOM_SIZE);
-            int boxy = y * BLOOM_SIZE + offsety - (BLOOM_SIZE);
-            rdpq_texture_rectangle_scaled(TILE0, boxx, boxy, boxx + BLOOM_SIZE * 2, boxy + BLOOM_SIZE * 2, 0, 0, 16,16);
+            int boxx = x * BLOOM_SIZE + offsetx - (BLOOM_SIZE * alpha);
+            int boxy = y * BLOOM_SIZE + offsety - (BLOOM_SIZE * alpha);
+            rdpq_texture_rectangle_scaled(TILE0, boxx, boxy, boxx + BLOOM_SIZE * 2 * alpha, boxy + BLOOM_SIZE * 2 * alpha, 0, 0, 16,16);
         }
     }
 }
@@ -231,8 +218,8 @@ void Level::load(char* levelname){
         int enabledcollisioncount = 0;
         for(int i = 0; i < MAX_AABB_COLLISIONS; i++) {
             fm_vec3_t center, half_extents;
-            aabb_collisions[i].center = string_to_vec(ini["Collision"]["colpos" + std::to_string(i)] | "0 0 0");
-            aabb_collisions[i].half_extents = string_to_vec(ini["Collision"]["colscl" + std::to_string(i)] | "0 0 0");
+            aabb_collisions[i].center = string_to_vec((ini["Collision"]["colpos" + std::to_string(i)] | "0 0 0").c_str());
+            aabb_collisions[i].half_extents = string_to_vec((ini["Collision"]["colscl" + std::to_string(i)] | "0 0 0").c_str());
             aabb_collisions[i].enabled = ini["Collision"]["colenb" + std::to_string(i)] | false;
             if(aabb_collisions[i].enabled) {
                 enabledcollisioncount++;
@@ -258,12 +245,12 @@ void Level::load(char* levelname){
             assertf(traversals[traversalcount].destinationlevel, "Traversal %s: destination level not specified", pair.name.c_str());
 
             fm_vec3_t center, half_extents;
-            traversals[traversalcount].collision.center = string_to_vec(pair.section["position"] | "0 0 0");
-            traversals[traversalcount].collision.half_extents = string_to_vec(pair.section["scale"] | "0 0 0");
+            traversals[traversalcount].collision.center = string_to_vec((pair.section["position"] | "0 0 0").c_str());
+            traversals[traversalcount].collision.half_extents = string_to_vec((pair.section["scale"] | "0 0 0").c_str());
             traversals[traversalcount].collision.enabled = pair.section["enabled"] | true;
             traversals[traversalcount].interact = pair.section["interact"] | false;
 
-            fm_vec3_t exitposition = string_to_vec(pair.section["exitposition"] | "0 0 0");
+            traversals[traversalcount].exitposition = string_to_vec((pair.section["exitposition"] | "0 0 0").c_str());
 
             traversalcount++;
             assertf(traversalcount < MAX_TRAVERSALS, "Level %s: too many traversals defined (%i<%i)", levelname, traversalcount, MAX_TRAVERSALS);
@@ -347,8 +334,8 @@ Level::~Level(){
 }
 
 // Fade from black state for level transitions
-static float traversal_fade_time = 0.0f;
-static bool traversal_fade_active = false;
+static float traversal_fade_time = 1.5f;
+static bool traversal_fade_active = true;
 
 // Helper function to find a traversal by name in a level
 static traversal_t* find_traversal_by_name(Level* level, const char* name) {
@@ -365,6 +352,7 @@ static traversal_t* find_traversal_by_name(Level* level, const char* name) {
 // Helper function to change level and position player at destination
 static void change_level(const char* levelname, const char* destinationname) {
     rspq_wait();
+    EntitySystem::save_all_to_eeprom();
     // Fade out
     for(int i = 0; i < 2; i++){
         rdpq_attach(display_get(), NULL);

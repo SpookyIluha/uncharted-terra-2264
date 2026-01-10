@@ -1,4 +1,9 @@
 import bpy
+import math
+from mathutils import Matrix, Euler, Vector
+
+# Conversion rotation: -90 degrees around X (Z-up -> Y-up)
+conv_rot = Matrix.Rotation(-math.pi / 2.0, 4, 'X')
 
 # Configuration
 COLLECTION_NAME = "Traversal"
@@ -24,8 +29,22 @@ for obj in collection.objects:
         continue
 
     # World-space position and scale
-    pos = obj.matrix_world.translation
-    scl = obj.scale
+    world_mat = obj.matrix_world.copy()
+
+    # Apply Z-up -> Y-up conversion
+    converted_mat = conv_rot @ world_mat
+    
+    # Decompose converted transform
+    loc, rot, scale = converted_mat.decompose()
+    eulerrot = rot.to_euler('XYZ')
+    converted_scale = Vector((
+        scale.x,   # X stays X
+        scale.z,   # Z -> Y
+        scale.y    # Y -> Z
+    ))
+
+    pos = loc
+    scl = converted_scale
 
     # Visibility (effective visibility: object + collection + viewport)
     enabled = obj.visible_get()
@@ -48,8 +67,15 @@ for obj in collection.objects:
     for child in obj.children:
         if child.type == 'EMPTY':
             exit_pos = child.matrix_world.translation
+
+            converted_exit_pos = Vector((
+                exit_pos.x,   # X stays X
+                exit_pos.z,   # Z -> Y
+                -exit_pos.y    # Y -> -Z
+            ))
+
             text.write(
-                f'exitposition = "{exit_pos.x:.6f} {exit_pos.y:.6f} {exit_pos.z:.6f}"\n'
+                f'exitposition = "{converted_exit_pos.x:.6f} {converted_exit_pos.y:.6f} {converted_exit_pos.z:.6f}"\n'
             )
             break  # only the first child Empty is used
         

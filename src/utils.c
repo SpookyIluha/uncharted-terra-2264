@@ -63,6 +63,36 @@ void rdpq_tex_blit_anchor(const surface_t* surface, rdpq_align_t horizontal, rdp
     rdpq_tex_blit(surface, x,y,parms);
 }
 
+
+// string -> vec3
+fm_vec3_t string_to_vec(const char* input)
+{
+    const char* str = input;
+    char* end;
+
+    fm_vec3_t result;
+    result.x = strtof(str, &end);
+    result.y = strtof(end, &end);
+    result.z = strtof(end, &end);
+
+    return result;
+}
+
+// string -> quat (vec4)
+fm_vec4_t string_to_quat(const char* input)
+{
+    const char* str = input;
+    char* end;
+
+    fm_vec4_t result;
+    result.w = strtof(str, &end);   
+    result.x = strtof(end, &end);
+    result.y = strtof(end, &end);
+    result.z = strtof(end, &end);
+
+    return result;
+}
+
 fm_vec3_t vec_upz_to_upy(fm_vec3_t* in)
 {
     fm_vec3_t out;

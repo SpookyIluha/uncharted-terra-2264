@@ -34,6 +34,8 @@ void systems_init(){
     engine_eeprom_init();
     engine_eeprom_load_persistent();
     filesystem_init();
+    check_language_config();
+    check_memory_expanded();
     engine_level_init();
     entity_register_all();
     subtitles_init();
@@ -45,7 +47,5 @@ int main(void)
     //libdragon_logo();
     //movie_play("rom:/movies/intrologo.m1v", NULL, 15);
     //game_logo();
-    check_language_config();
-    check_memory_expanded();
     game_start();
 }

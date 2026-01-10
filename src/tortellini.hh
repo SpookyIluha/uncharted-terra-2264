@@ -345,6 +345,14 @@ private:
 		rtrim(s);
 	}
 
+	static inline void replace_all(std::string &s, const std::string &search, const std::string &replace) {
+		size_t pos = 0;
+		while ((pos = s.find(search, pos)) != std::string::npos) {
+			s.replace(pos, search.length(), replace);
+			pos += replace.length();
+		}
+	}
+
 public:
 	class iterator {
 		friend class ini;
@@ -436,6 +444,19 @@ public:
 
 			value = line.substr(idx + 1);
 			trim(value);
+
+			if (value.length() > 0 && value.front() == '"' && (value.length() == 1 || value.back() != '"')) {
+				std::string subline;
+				while (std::getline(stream, subline)) {
+					trim(subline);
+					value += "\n" + subline;
+					if (!subline.empty() && subline.back() == '"') {
+						break;
+					}
+				}
+			}
+
+			replace_all(value, "\\n", "\n");
 
 			if (value.empty()) continue; // not really "invalid" but we choose not to keep it
 

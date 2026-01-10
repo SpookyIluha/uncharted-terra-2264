@@ -14,9 +14,25 @@
 #include "subtitles.h"
 #include "game/entity.h"
 
+bool must_save_game_on_next_frame = false;
+bool must_load_game_on_next_frame = false;
+bool must_goto_main_menu = false;
+
+extern void playtimelogic_savegame(){
+  must_save_game_on_next_frame = true;
+}
+extern void playtimelogic_loadgame(){
+  must_load_game_on_next_frame = true;  
+}
+extern void playtimelogic_gotomainmenu(){
+  must_goto_main_menu = true;
+}
 
 void playtimelogic(){
-
+  must_save_game_on_next_frame = false;
+  must_load_game_on_next_frame = false;
+  must_goto_main_menu = false;
+  
   const T3DVec3 camPos = {{0,0.0f,0.0f}};
   const T3DVec3 camTarget = {{0,0,0}};
   const T3DVec3 camUp = {{0,1,0}};
@@ -33,10 +49,10 @@ void playtimelogic(){
   player_init();
   player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
 
-  subtitles_add("Test subtitle.", 8.0f);
+  subtitles_add("Test subtitle.", 8.0f, 'A');
   
-
   while(true){
+    // ======== Update ======== //
     timesys_update();
     joypad_poll();
     audioutils_mixer_update();
@@ -45,10 +61,6 @@ void playtimelogic(){
     traversal_update(); // Check for level transitions
     traversal_fade_update(); // Update fade from black
     EntitySystem::update_all(); // Update all entities
-    // ======== Update ======== //
-    // cycle through FP matrices to avoid overwriting what the RSP may still need to load
-    frameIdx = (frameIdx + 1) % 3;
-
 
     // ======== Draw ======== //
     rdpq_attach(display_get(), display_get_zbuf());
@@ -62,11 +74,16 @@ void playtimelogic(){
     else rdpq_disable_interlaced();
 
     player_draw(&viewport);
-    temporal_dither(frameIdx);
+
+    rdpq_set_mode_standard();
+    temporal_dither(FRAME_NUMBER);
+    rdpq_mode_persp(true);
+    t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
 
     rdpq_mode_antialias(AA_REDUCED);
     rdpq_mode_zmode(ZMODE_INTERPENETRATING);
     currentlevel.draw();
+    rdpq_mode_persp(true);
     EntitySystem::draw_all(); // Draw all entities
     player_draw_ui();
     subtitles_draw();

@@ -16,6 +16,7 @@ extern "C"{
 
 #define T3D_TOUNITS(x) (64.0f*(x))
 #define T3D_FROMUNITS(x) ((x)*(1.0/64.0f))
+#define T3D_TOUNITSCALE (64.0f)
 
 /// @brief rdpq_sprite_blit but with anchor support
 /// @param sprite 
@@ -98,6 +99,12 @@ int randm(int max);
 /// @param max 
 /// @return 
 int randr(int min, int max);
+
+// string to vec
+fm_vec3_t string_to_vec(const char* input);
+
+// string to quat
+fm_vec4_t string_to_quat(const char* input);
 
 extern fm_vec3_t vec_upz_to_upy(fm_vec3_t* in);
 

@@ -14,6 +14,9 @@
 #include "utils.h"
 #include "tortellini.hh"
 
+#define ENTITY_IS_ENABLED (1<<1)
+#define ENTITY_HAS_EEPROM_DATA (1<<0)
+
 // Forward declarations
 namespace tortellini {
     struct ini;
@@ -28,12 +31,12 @@ public:
     // Transform structure
     struct Transform {
         fm_vec3_t position;
-        fm_vec3_t rotation;
+        fm_vec4_t rotation;
         fm_vec3_t scale;
         
         Transform() {
             position = (fm_vec3_t){{0, 0, 0}};
-            rotation = (fm_vec3_t){{0, 0, 0}};
+            rotation = (fm_vec4_t){{0, 0, 0, 1}}; // Identity quaternion
             scale = (fm_vec3_t){{1, 1, 1}};
         }
     };
@@ -88,7 +91,7 @@ private:
 
 public:
     // Register an entity class factory
-    static void register_entity_type(const std::string& class_type, void (*onregister)(), EntityFactory factory);
+    static void register_entity_type(const std::string& class_type, EntityFactory factory);
     
     // Create an entity instance
     static Entity* create_entity(const std::string& class_type, const std::string& name, int id = -1);

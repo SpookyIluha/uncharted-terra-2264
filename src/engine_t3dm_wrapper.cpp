@@ -11,17 +11,17 @@ bool T3DMWModel::load(const char* filepath) {
     if(!transform_fp){
         transform_fp = (T3DMat4FP*)malloc_uncached(sizeof(T3DMat4FP) * 3); // allocate one matrix for each framebuffer
     }
-    t3d_mat4fp_from_srt(&transform_fp[0],
+    t3d_mat4fp_from_srt_euler(&transform_fp[0],
         {1.0f, 1.0f, 1.0f},
         {0.0f, 0.0f, 0.0f},
         {0.0f, 0.0f, 0.0f}
     );
-    t3d_mat4fp_from_srt(&transform_fp[1],
+    t3d_mat4fp_from_srt_euler(&transform_fp[1],
         {1.0f, 1.0f, 1.0f},
         {0.0f, 0.0f, 0.0f},
         {0.0f, 0.0f, 0.0f}
     );
-    t3d_mat4fp_from_srt(&transform_fp[2],
+    t3d_mat4fp_from_srt_euler(&transform_fp[2],
         {1.0f, 1.0f, 1.0f},
         {0.0f, 0.0f, 0.0f},
         {0.0f, 0.0f, 0.0f}
