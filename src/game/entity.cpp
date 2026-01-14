@@ -2,6 +2,7 @@
 #include "engine_filesystem.h"
 #include "engine_gamestatus.h"
 #include "engine_command.h"
+#include "player.h"
 #include "utils.h"
 #include "level.h" // For string_to_vec
 #include <assert.h>
@@ -25,7 +26,7 @@ Entity::Entity(const std::string& entity_name, const std::string& entity_class_t
 }
 
 bool Entity::console_command_invoke(const std::string& func_name, const std::vector<std::string>& args) {
-    auto it = Entity::commands.find(class_type + "_" + func_name);
+    auto it = Entity::commands.find(name + "_" + func_name);
     if (it != Entity::commands.end()) {
         it->second(args);
         return true;
@@ -124,6 +125,7 @@ void EntitySystem::load_entities_from_ini(const std::string& levelname) {
             entity->load_from_eeprom(gamestatus.state.game.entities[id].flags);
             entity->enabled = (gamestatus.state.game.entities[id].flags & ENTITY_IS_ENABLED)? true : false;
         }
+        player_load_from_eeprom();
         
         // Initialize the entity
         entity->init();
@@ -159,6 +161,7 @@ void EntitySystem::update_all() {
 
 void EntitySystem::draw_all() {
     for (auto& pair : entities) {
+        t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
         pair.second->draw();
     }
 }
@@ -175,6 +178,7 @@ void EntitySystem::save_all_to_eeprom() {
         Entity* entity = pair.second;
         gamestatus.state.game.entities[entity->get_id()].flags = entity->save_to_eeprom() | (entity->enabled? ENTITY_IS_ENABLED : 0) | ENTITY_HAS_EEPROM_DATA;
     }
+    player_save_to_eeprom();
 }
 
 

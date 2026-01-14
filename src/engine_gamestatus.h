@@ -55,7 +55,7 @@ typedef struct gamestate_s{
         } entities[MAX_ENTITIES];
 
         char   playername[SHORTSTR_LENGTH];
-        char   roomname[LONGSTR_LENGTH];
+        char   levelname[LONGSTR_LENGTH];
         fm_vec3_t playerpos;
         fm_vec2_t playerrot;
         
@@ -106,6 +106,9 @@ typedef struct gamestatus_s{
 
     double gamespeed;
     bool   paused;
+    bool   fastgraphics;
+
+    char   startlevelname[LONGSTR_LENGTH];
 
     struct {
         char imagesfolder[SHORTSTR_LENGTH];

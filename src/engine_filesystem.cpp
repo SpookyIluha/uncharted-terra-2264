@@ -49,6 +49,8 @@ void engine_config_load(){
 
     gamestatus.state.scripts.debug =  ini["Scripts"]["debug"] | false;
 
+    strcpy(gamestatus.startlevelname,  (ini["Game"]["startlevel"] | "START_LEVEL_NOT_SET").c_str());
+
     gamestatus.fonts.mainfont       =  ini["Fonts"]["mainfont"]         | 1;
     gamestatus.fonts.mainfontstyle  =  ini["Fonts"]["mainfontstyle"]    | 0;
     gamestatus.fonts.mainfontselected  =  ini["Fonts"]["mainfontselected"]    | 0;

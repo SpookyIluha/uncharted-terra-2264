@@ -9,6 +9,7 @@
 #include "tortellini.hh"
 #include "engine_filesystem.h"
 #include "engine_t3dm_wrapper.h"
+#include "engine_gamestatus.h"
 #include "utils.h"
 #include "level.h"
 #include "player.h"
@@ -23,6 +24,9 @@ void engine_level_init(){
     register_game_console_command("change_level", change_level_console_command);
 }
 
+// Fade from black state for level transitions
+static float traversal_fade_time = 1.5f;
+static bool traversal_fade_active = true;
 
 uint32_t state = 777;
 
@@ -176,7 +180,7 @@ void Level::load(char* levelname){
             uint32_t color1 = ini["General"]["bgfillcolor"] | 0xFF00FFFF;
             bgfillcolor = color_from_packed32(color1);
             bgfillcolor = color_from_packed16(color_to_packed16(bgfillcolor)); // to have the same value as fogcolor
-            debugf("Level %s: background fill color set to %08X\n", levelname, color1);
+            debugf("Level %s: background fill color set to %08lX\n", levelname, color1);
         } else if (bgtype_str == "skybox") {
             bgtype = SKYBOX;
             std::string skyboxname = ini["General"]["skyboxmodel"] | "";
@@ -198,7 +202,7 @@ void Level::load(char* levelname){
         hdr.tonemappingaverage = ini["General"]["tonemappingaverage"] | 0.5f;
 
         debugf("Level %s: fog enabled set to %d\n", levelname, fogenabled);
-        debugf("Level %s: fog color set to %08X\n", levelname, fogcolor);
+        debugf("Level %s: fog color set to %08lX\n", levelname, fogcolor);
         debugf("Level %s: fog far distance set to %f\n", levelname, fogfardistance);
         debugf("Level %s: fog near distance set to %f\n", levelname, fogneardistance);
         debugf("Level %s: draw distance set to %f\n", levelname, drawdistance);
@@ -263,8 +267,12 @@ void Level::load(char* levelname){
     {
         EntitySystem::load_entities_from_ini(levelname);
     }
+
+    strcpy(gamestatus.state.game.levelname, levelname);
     
     debugf("Level '%s' loaded successfully\n", levelname);
+    traversal_fade_time = TRAVERSAL_FADE_DURATION;
+    traversal_fade_active = true;
 }
 
 
@@ -329,13 +337,14 @@ void Level::free(){
     EntitySystem::clear_all(); // Clear all entities when level is freed
 }
 
+void Level::save_eeprom(){
+    EntitySystem::save_all_to_eeprom();
+}
+
 Level::~Level(){
     free();
 }
 
-// Fade from black state for level transitions
-static float traversal_fade_time = 1.5f;
-static bool traversal_fade_active = true;
 
 // Helper function to find a traversal by name in a level
 static traversal_t* find_traversal_by_name(Level* level, const char* name) {
@@ -347,12 +356,13 @@ static traversal_t* find_traversal_by_name(Level* level, const char* name) {
         }
     }
     assertf(false, "Traversal '%s' not found in level '%s'\n", name, level->name);
+    return nullptr;
 }
 
 // Helper function to change level and position player at destination
 static void change_level(const char* levelname, const char* destinationname) {
     rspq_wait();
-    EntitySystem::save_all_to_eeprom();
+    currentlevel.save_eeprom();
     // Fade out
     for(int i = 0; i < 2; i++){
         rdpq_attach(display_get(), NULL);

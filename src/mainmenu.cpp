@@ -23,24 +23,39 @@ T3DViewport viewport;
 void new_game();
 
 void game_start(){
-    resolution_t res;
+
+    if(gamestatus.fastgraphics){
+        resolution_t res;
+        res.width = 640;
+        res.height = 400;
+        res.interlaced = INTERLACE_RDP;
+        res.aspect_ratio = (float)res.width / (float)res.height;
+        display_init(res,
+            DEPTH_16_BPP,
+            3, GAMMA_NONE,
+            FILTERS_DISABLED
+        );
+    }
+    else{
+        resolution_t res;
         res.width = 640;
         res.height = 480;
-        res.interlaced = INTERLACE_RDP;
-        res.aspect_ratio = (float)640 / 480;
+        res.interlaced = INTERLACE_HALF;
+        res.aspect_ratio = (float)res.width / (float)res.height;
+        display_init(res,
+            DEPTH_16_BPP,
+            3, GAMMA_NONE,
+            FILTERS_RESAMPLE_ANTIALIAS_DEDITHER
+        );
+    }
 
-    display_init(res,
-		DEPTH_16_BPP,
-		3, GAMMA_NONE,
-		FILTERS_RESAMPLE_ANTIALIAS_DEDITHER
-	);
 
     while(true){
-        if(!cont){
-            game_menu();
-            if(!cont)
-                new_game();
-        }
+        game_menu();
+        if(!cont)
+            new_game();
+        else
+            playtimelogic();
     }
 }
 
@@ -81,7 +96,10 @@ void new_game(){
         rdpq_attach(display_get(), NULL);
         rdpq_clear(RGBA32(0,0,0,0));
         rdpq_disable_interlaced();
-        rdpq_set_scissor(0,240 - 120,640, 240 + 120);
+        if(gamestatus.fastgraphics){
+            rdpq_set_scissor(0,200 - 120,640, 200 + 120);
+        }
+        else rdpq_set_scissor(0,240 - 120,640, 240 + 120);
         rdpq_mode_zbuf(false,false);
         rdpq_sync_pipe();
         rdpq_sync_tile();
@@ -133,7 +151,7 @@ void game_draw(){
   {
     // ======== Update ======== //
     // cycle through FP matrices to avoid overwriting what the RSP may still need to load
-    frameIdx = (frameIdx + 1) % 3;
+    frameIdx = (frameIdx + 1) % 6;
 
     float modelScale = 1.0f;
 
@@ -175,11 +193,10 @@ void game_menu(){
     surface_t bgsurf = sprite_get_pixels(bg);
     sprite_t* button_a = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/button_a.rgba32").c_str());
 
-    viewport = t3d_viewport_create_buffered(3);
+    viewport = t3d_viewport_create_buffered(12);
     model = T3DMWModel();
     model.load(filesystem_getfn(DIR_MODEL, "mainmenu/model").c_str());
 
-    viewport = t3d_viewport_create_buffered(3);
 
     rdpq_textparms_s parmstext; parmstext.style_id = gamestatus.fonts.titlefontstyle; parmstext.disable_aa_fix = true;
 
@@ -281,22 +298,22 @@ void game_menu(){
         blitparms.cx = bgsurf.width / 2;
         blitparms.cy = bgsurf.height / 2;
         rdpq_sprite_blit(bg, display_get_width() / 2, display_get_height() / 4, &blitparms);
-        
+        float height = display_get_height();
         {
             posoffset = lerp(posoffset, 0, 0.1f);
-                rdpq_sprite_blit(button_a, 15 + selection*150, 420 + posoffset, NULL);
+                rdpq_sprite_blit(button_a, 15 + selection*150, height - 60 + posoffset, NULL);
             if(gamestatus.state_persistent.lastsavetype != SAVE_NONE){
                 parmstext.style_id = gamestatus.fonts.titlefontstyle;
-                rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, 440 + posoffset, dictstr("MM_continue"));
+                rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, height - 40 + posoffset, dictstr("MM_continue"));
             } else
             {
                 parmstext.style_id = 2;
-                rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, 440 + posoffset, dictstr("MM_continue"));
+                rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, height - 40 + posoffset, dictstr("MM_continue"));
             }
             parmstext.style_id = gamestatus.fonts.titlefontstyle;
-            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 200, 440 + posoffset, dictstr("MM_newgame"));
-            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 350, 440 + posoffset, music_volume_get() > 0? dictstr("MM_music_on") : dictstr("MM_music_off"));
-            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 500, 440 + posoffset, sound_volume_get() > 0? dictstr("MM_sounds_on") :dictstr ("MM_sounds_off"));
+            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 200, height - 40 + posoffset, dictstr("MM_newgame"));
+            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 350, height - 40 + posoffset, music_volume_get() > 0? dictstr("MM_music_on") : dictstr("MM_music_off"));
+            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 500, height - 40 + posoffset, sound_volume_get() > 0? dictstr("MM_sounds_on") :dictstr ("MM_sounds_off"));
             joypad_poll();
 
             joypad_buttons_t btn  = joypad_get_buttons_pressed(JOYPAD_PORT_1);
@@ -311,22 +328,11 @@ void game_menu(){
                 switch(selection){
                     case 0:{
                         bgm_stop(0); 
-                        engine_eeprom_load_manual();
+                        playtimelogic_loadgame();
                         sound_play("menu/select", false); gamestart = true; cont = true;
                     } break;
                     case 1:{
                         sound_play("menu/select", false); 
-                        if(gamestatus.state_persistent.global_game_state == 1) {
-                            bgm_stop(0); 
-                            sound_stop();
-                            timesys_init();
-                            cont = true;
-                        }
-                        else{
-                            //overlays_set_player_name(dictstr("MM_entername")); 
-                            //overlays_message(dictstr("MM_tutorial")); 
-                            cont = false;
-                        }
                         gamestart = true;
                     } break;
                     case 2:{

@@ -1,6 +1,7 @@
 #include <libdragon.h>
 #include <vector>
 #include "engine_filesystem.h"
+#include "engine_gamestatus.h"
 #include "intro.h"
 
 void check_memory_expanded(){
@@ -18,6 +19,14 @@ void check_memory_expanded(){
             rdpq_detach_show();
         }
     }*/
+}
+
+void check_fast_graphics(){
+    joypad_poll();
+    joypad_inputs_t input = joypad_get_inputs(JOYPAD_PORT_1);
+    if(input.btn.z){
+        gamestatus.fastgraphics = true;
+    }
 }
 
 void check_language_config(){

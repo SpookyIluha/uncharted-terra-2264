@@ -60,7 +60,7 @@ void ItemInstance::preinit(){
 }
 
 ItemInstance::ItemInstance(const std::string& name, int id)
-    : Entity(name, ITEM_INSTANCE_TYPE_NAME, id), item_id(0), pickedup(false), journalmodel() {
+    : Entity(name, ITEM_INSTANCE_TYPE_NAME, id), item_id(0), pickedup(false), itemmodel() {
 
     // Register functions that other entities can call
     /*register_console_command("set_value", [this](const std::vector<std::string>& args) {
@@ -77,10 +77,13 @@ void ItemInstance::load_from_ini(const tortellini::ini::section& section) {
     assertf(item_id >= 0, "ItemInstance '%s': item_id must be valid: %d >= 0", get_name().c_str(), item_id);
 
     std::string modelname = itemsdict[name]["model"] | "entity/rope";
-    journalmodel.load(filesystem_getfn(DIR_MODEL, modelname.c_str()).c_str());
+    itemmodel.load(filesystem_getfn(DIR_MODEL, modelname.c_str()).c_str());
+
+    requireditemtopickup = section["requireditemtopickup"] | "";
+    pickuprange = section["range"] | 2.0f;
     
-    debugf("ItemInstance '%s': loaded from INI (item_id=%d)\n", 
-           get_name().c_str(), item_id);
+    debugf("ItemInstance '%s': loaded from INI (item_id=%d, requireditemtopickup=%s, pickuprange=%.2f)\n", 
+           get_name().c_str(), item_id, requireditemtopickup.c_str(), pickuprange);
 }
 
 void ItemInstance::load_from_eeprom(uint16_t data) {
@@ -106,24 +109,34 @@ void ItemInstance::update() {
     // Update logic here
     if (!enabled || pickedup) return;
 
-    T3DMat4FP* transform_fp = journalmodel.get_transform_fp();
+    T3DMat4FP* transform_fp = itemmodel.get_transform_fp();
     fm_vec3_t position; fm_vec3_scale(&position, &transform.position, T3D_TOUNITSCALE);
     t3d_mat4fp_from_srt(transform_fp, (float*)&transform.scale, (float*)&transform.rotation, (float*)&position);
 
-    if(fm_vec3_distance(&transform.position, &player.position) < 2.0f){
+    if(fm_vec3_distance(&transform.position, &player.position) < pickuprange){
         fm_vec3_t towards; fm_vec3_sub(&towards, &transform.position, &player.camera.position);
         fm_vec3_norm(&towards, &towards);
         float dot = fm_vec3_dot(&towards, &player.camera.forward);
         if(dot > 0.7f){
-            subtitles_add(dictstr("pickup"), 1.0f, 'A');
-            if(player.joypad.held.a){
-                pickedup = true;
-                player_inventory_additem(item_id, 1);
-                std::string pickupmessage = (itemsdict[name]["pickupmessage"] | "");
-                if(!pickupmessage.empty()){
-                    subtitles_add(pickupmessage.c_str(), 6.0f, '\0');
-                } else{
-                    subtitles_add((dictstr("itempickedup") + (itemsdict[name]["fullname"] | "ITEM_NAME")).c_str(), 4.0f, '\0');
+
+            int player_slot_that_has_required_item = -1;
+            if(!requireditemtopickup.empty())
+                player_slot_that_has_required_item = player_check_has_item(requireditemtopickup);
+
+            if(requireditemtopickup.empty() || player_slot_that_has_required_item != -1){
+                subtitles_add(dictstr("pickup"), 1.0f, 'A');
+                if(player.joypad.pressed.a){
+                    pickedup = true;
+                    player_inventory_additem(item_id, 1);
+                    std::string pickupmessage = (itemsdict[name]["pickupmessage"] | "");
+                    if(!pickupmessage.empty()){
+                        subtitles_add(dictstr(pickupmessage.c_str()), 6.0f, '\0');
+                    } else{
+                        subtitles_add((dictstr("itempickedup") + (itemsdict[name]["fullname"] | "ITEM_NAME")).c_str(), 4.0f, '\0');
+                    }
+                    if(!requireditemtopickup.empty()){
+                        player_inventory_removeitem_by_slot(player_slot_that_has_required_item, 1);
+                    }
                 }
             }
         }
@@ -133,7 +146,7 @@ void ItemInstance::update() {
 
 void ItemInstance::draw() {
     if(enabled && !pickedup)
-        journalmodel.draw();
+        itemmodel.draw();
 }
 
 // Factory function

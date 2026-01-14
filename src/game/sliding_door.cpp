@@ -1,6 +1,7 @@
 #include "sliding_door.h"
 #include "engine_command.h"
-#include "level.h" // for string_to_vec
+#include "level.h"
+#include "utils.h"
 
 SlidingDoor::SlidingDoor(const std::string& name, int id)
     : Entity(name, SLIDING_DOOR_TYPE_NAME, id), 
@@ -25,17 +26,21 @@ SlidingDoor::SlidingDoor(const std::string& name, int id)
 void SlidingDoor::load_from_ini(const tortellini::ini::section& section) {
     enabled = section["enabled"] | true;
     model_path = section["model"] | "";
+    collision_associated_id = section["collision_id"] | -1;
     
     std::string dir_str = section["direction"] | "0 0 0";
-    direction = string_to_vec(dir_str);
+    direction = string_to_vec(dir_str.c_str());
     fm_vec3_norm(&direction, &direction); // Ensure normalized
     
     move_distance = section["distance"] | 0.0f;
-    speed = section["speed"] | 1.0f;
+    speed = section["speed"] | 0.25f;
 
     if (!model_path.empty()) {
         model.load(filesystem_getfn(DIR_MODEL, model_path.c_str()).c_str());
     }
+
+    debugf("SlidingDoor '%s': loaded with model '%s', move_distance %.2f, speed %.2f\n",
+           get_name().c_str(), model_path.c_str(), move_distance, speed);
 }
 
 void SlidingDoor::load_from_eeprom(uint16_t data) {
@@ -45,7 +50,7 @@ void SlidingDoor::load_from_eeprom(uint16_t data) {
     // Or just ignore persistence for door state if not required.
     // The user didn't specify persistence behavior, but generally doors might need it.
     // Let's use 1 bit for open/closed target.
-    bool is_open = (data & 1);
+    bool is_open = (data & SLIDING_DOOR_OPENED_BIT);
     if (is_open) {
         state = OPEN;
         current_progress = 1.0f;
@@ -58,7 +63,7 @@ void SlidingDoor::load_from_eeprom(uint16_t data) {
 uint16_t SlidingDoor::save_to_eeprom() const {
     // Save target state
     bool is_open = (state == OPEN || state == OPENING);
-    return is_open ? 1 : 0;
+    return is_open ? SLIDING_DOOR_OPENED_BIT : 0;
 }
 
 void SlidingDoor::init() {
@@ -88,6 +93,9 @@ void SlidingDoor::update() {
             state = CLOSED;
         }
     }
+
+    if(collision_associated_id != -1)
+        currentlevel.aabb_collisions[collision_associated_id].enabled = (state == OPENING || state == OPEN)? false : true;
 
     if (state == OPENING || state == CLOSING) {
         fm_vec3_t offset;

@@ -9,6 +9,7 @@
 
 char current_subtitle[SUBTITLES_MAX_LENGTH] = {0};
 float subtitle_duration = 0.0f;
+int current_priority = 0;
 
 sprite_t* a_button;
 sprite_t* b_button;
@@ -39,18 +40,27 @@ void subtitles_free(){
 void subtitles_update(){
     if(subtitle_duration > 0.0f){
         subtitle_duration -= DELTA_TIME;
+    } else {
+        current_priority = 0;
     }
 }
 
 void subtitles_add(const char* text, float duration, char buttonsprite){
+   subtitles_add(text, duration, buttonsprite, 1);
+}
+
+void subtitles_add(const char* text, float duration, char buttonsprite, int priority){
+    if(priority < current_priority) return;
+    current_priority = priority;
+
     assertf(strlen(text) < SUBTITLES_MAX_LENGTH, "Subtitle text too long %s", text);
-   strcpy(current_subtitle, text);
-   subtitle_duration = duration;
-   switch(buttonsprite){
-      case 'A': selectedsprite = a_button; break;
-      case 'B': selectedsprite = b_button; break;
-      case 'S': selectedsprite = start_button; break;
-      default: selectedsprite = nullptr; break;
+    strcpy(current_subtitle, text);
+    subtitle_duration = duration;
+    switch(buttonsprite){
+        case 'A': selectedsprite = a_button; break;
+        case 'B': selectedsprite = b_button; break;
+        case 'S': selectedsprite = start_button; break;
+        default: selectedsprite = nullptr; break;
    }
 }
 
@@ -69,11 +79,11 @@ void subtitles_draw(){
    parms.align = ALIGN_CENTER;
    parms.wrap = WRAP_WORD;
    parms.style_id = gamestatus.fonts.subtitlefontstyle;
-   rdpq_text_printf(&parms, gamestatus.fonts.subtitlefont, display_get_width() * 0.125f, SUBTITLES_START_Y, "%s", current_subtitle);
+   rdpq_text_printf(&parms, gamestatus.fonts.subtitlefont, display_get_width() * 0.125f, display_get_height() - SUBTITLES_OFFSET_Y , "%s", current_subtitle);
    if(selectedsprite && alpha > 0.9f){
       rdpq_set_mode_standard();
       rdpq_mode_alphacompare(8);
-      rdpq_sprite_blit(selectedsprite, (display_get_width() - selectedsprite->width)/2, SUBTITLES_START_Y - selectedsprite->height - 5, NULL);
+      rdpq_sprite_blit(selectedsprite, (display_get_width() - selectedsprite->width)/2, display_get_height() - SUBTITLES_OFFSET_Y - selectedsprite->height - 5, NULL);
    }
 
 }

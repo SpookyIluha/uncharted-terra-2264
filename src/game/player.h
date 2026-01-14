@@ -31,6 +31,7 @@ typedef struct {
 
 extern player_t player;
 
+int player_check_has_item(const std::string& item_name);
 void player_inventory_additem(uint8_t item_id, uint8_t item_count);
 void player_inventory_removeitem_by_item_id(uint8_t item_id, uint8_t item_count);
 void player_inventory_removeitem_by_slot(uint8_t slot, uint8_t item_count);
@@ -46,6 +47,9 @@ void player_draw_ui();
 void player_fldisable();
 void player_flenable();
 void player_flswitch();
+
+void player_save_to_eeprom();
+void player_load_from_eeprom();
 
 #ifdef __cplusplus
 }

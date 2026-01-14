@@ -6,10 +6,13 @@
 
 #define SLIDING_DOOR_TYPE_NAME "SlidingDoor"
 
+#define SLIDING_DOOR_OPENED_BIT (1<<3)
+
 class SlidingDoor : public Entity {
 private:
     std::string model_path;
     fm_vec3_t direction;
+    int collision_associated_id;
     float move_distance;
     float speed;
     
@@ -23,7 +26,7 @@ private:
     State state;
     float current_progress; // 0.0 to 1.0
     
-    T3DM_Wrapper model;
+    T3DMWModel model;
     fm_vec3_t initial_position;
 
 public:

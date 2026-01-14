@@ -12,4 +12,7 @@ void check_memory_expanded();
 /// @brief Check the game's current set language and show a screen to set it up if it doesn't
 void check_language_config();
 
+/// @brief Check if fast graphics mode should be enabled
+void check_fast_graphics();
+
 #endif

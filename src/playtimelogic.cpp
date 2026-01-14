@@ -4,6 +4,7 @@
 #include <sstream>
 #include "engine_filesystem.h"
 #include "engine_t3dm_wrapper.h"
+#include "engine_eeprom.h"
 #include "audioutils.h"
 #include "utils.h"
 #include "types.h"
@@ -18,21 +19,32 @@ bool must_save_game_on_next_frame = false;
 bool must_load_game_on_next_frame = false;
 bool must_goto_main_menu = false;
 
-extern void playtimelogic_savegame(){
+void playtimelogic_savegame(){
   must_save_game_on_next_frame = true;
 }
-extern void playtimelogic_loadgame(){
+
+void playtimelogic_loadgame(){
   must_load_game_on_next_frame = true;  
 }
-extern void playtimelogic_gotomainmenu(){
+void playtimelogic_gotomainmenu(){
   must_goto_main_menu = true;
 }
 
+void savegame(){
+  currentlevel.save_eeprom();
+  engine_eeprom_save_manual();
+  engine_eeprom_save_persistent();
+}
+
+void loadgame(){
+  engine_eeprom_load_persistent();
+  engine_eeprom_load_manual();
+  currentlevel.load(gamestatus.state.game.levelname);
+  player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
+}
+
 void playtimelogic(){
-  must_save_game_on_next_frame = false;
-  must_load_game_on_next_frame = false;
   must_goto_main_menu = false;
-  
   const T3DVec3 camPos = {{0,0.0f,0.0f}};
   const T3DVec3 camTarget = {{0,0,0}};
   const T3DVec3 camUp = {{0,1,0}};
@@ -41,17 +53,26 @@ void playtimelogic(){
   uint8_t colorDir[4]     = {0xEE, 0xAA, 0xAA, 0xFF};
 
   T3DVec3 lightDirVec = {{-1.0f, 1.0f, 1.0f}};
-  T3DViewport viewport = t3d_viewport_create_buffered(3);
+  T3DViewport viewport = t3d_viewport_create_buffered(12);
   int frameIdx = 0;
-
-  currentlevel.load("start_ship");
-
-  player_init();
-  player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
-
-  subtitles_add("Test subtitle.", 8.0f, 'A');
   
-  while(true){
+  player_init();
+
+  if(!must_load_game_on_next_frame){
+    currentlevel.load(gamestatus.startlevelname);
+    player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
+  }
+  
+  while(!must_goto_main_menu){
+    if(must_save_game_on_next_frame){
+      savegame();
+      must_save_game_on_next_frame = false;
+    }
+    if(must_load_game_on_next_frame){
+      loadgame();
+      player_init();
+      must_load_game_on_next_frame = false;
+    }
     // ======== Update ======== //
     timesys_update();
     joypad_poll();
@@ -90,4 +111,5 @@ void playtimelogic(){
     traversal_fade_draw(); // Draw fade from black overlay
     rdpq_detach_show();
   }
+  rspq_wait();
 }

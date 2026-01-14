@@ -20,7 +20,9 @@ class ItemInstance : public Entity {
 private:
     int item_id;
     bool pickedup;
-    T3DMWModel journalmodel;
+    T3DMWModel itemmodel;
+    std::string requireditemtopickup;
+    float pickuprange;
 
 public:
     ItemInstance(const std::string& name, int id);

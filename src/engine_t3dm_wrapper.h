@@ -29,7 +29,7 @@ class T3DMWModel {
         ~T3DMWModel();
 
         T3DMat4FP* get_transform_fp(){
-            return &transform_fp[FRAME_NUMBER % 3];
+            return &transform_fp[FRAME_NUMBER % 6];
         };
 
         void set_transform_fp(T3DMat4FP &mat){

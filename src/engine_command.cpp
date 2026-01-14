@@ -30,44 +30,73 @@ static std::vector<std::string> tokenize(const std::string& str) {
     if (!current.empty()) tokens.push_back(current);
     return tokens;
 }
-
+    
 void register_game_console_command(const std::string& name, ConsoleCommand func) {
     game_console_commands[name] = func;
     debugf("Registered game console command: %s\n", name.c_str());
 }
 
-bool execute_console_command(const std::string& command) {
-    std::vector<std::string> tokens = tokenize(command);
-
-    assertf(!tokens.empty(),"Received empty command\n");
-
-    if (tokens[0] == "entity") {
-        assertf(tokens.size() >= 3, "Entity command requires at least 3 tokens: entity <name> <func> [args...]\n");
-
-        const std::string& entity_name = tokens[1];
-        const std::string& func_name = tokens[2];
-        std::vector<std::string> args(tokens.begin() + 3, tokens.end());
-
-        Entity* e = EntitySystem::get_entity_by_name(entity_name);
-        if (!e) {
-            debugf("WARNING: execute_console_command could not find entity '%s'\n", entity_name.c_str());
-            return false;
+bool execute_console_command(const std::string& command_line) {
+    std::vector<std::string> commands;
+    std::string current;
+    bool in_quotes = false;
+    
+    // Split by semicolon
+    for (size_t i = 0; i < command_line.size(); i++) {
+        char c = command_line[i];
+        if (c == '"') {
+            in_quotes = !in_quotes;
         }
-        bool ok = e->console_command_invoke(func_name, args);
-        if (!ok) {
-            debugf("WARNING: execute_console_command entity '%s' has no function '%s'\n", entity_name.c_str(), func_name.c_str());
+        
+        if (!in_quotes && c == ',') {
+            if (!current.empty()) {
+                commands.push_back(current);
+                current.clear();
+            }
+        } else {
+            current.push_back(c);
         }
-        return ok;
+    }
+    if (!current.empty()) commands.push_back(current);
+
+    bool all_ok = true;
+
+    for (const auto& cmd : commands) {
+        debugf("INFO: execute_console_command: %s\n", cmd.c_str());
+        std::vector<std::string> tokens = tokenize(cmd);
+
+        if (tokens.empty()) continue;
+
+        if (tokens[0] == "entity") {
+            assertf(tokens.size() >= 3, "Entity command requires at least 3 tokens: entity <name> <func> [args...]\n");
+
+            const std::string& entity_name = tokens[1];
+            const std::string& func_name = tokens[2];
+            std::vector<std::string> args(tokens.begin() + 3, tokens.end());
+
+            Entity* e = EntitySystem::get_entity_by_name(entity_name);
+            if (!e) {
+                debugf("WARNING: execute_console_command could not find entity '%s'\n", entity_name.c_str());
+                all_ok = false;
+                continue;
+            }
+            bool ok = e->console_command_invoke(func_name, args);
+            if (!ok) {
+                debugf("WARNING: execute_console_command entity '%s' has no function '%s'\n", entity_name.c_str(), func_name.c_str());
+                all_ok = false;
+            }
+        } else {
+            const std::string& cmd_name = tokens[0];
+            auto it = game_console_commands.find(cmd_name);
+
+            assertf(it != game_console_commands.end(), "Unknown game console command: %s\n", cmd_name.c_str());
+
+            std::vector<std::string> args(tokens.begin() + 1, tokens.end());
+            it->second(args);
+        }
     }
 
-    const std::string& cmd_name = tokens[0];
-    auto it = game_console_commands.find(cmd_name);
-
-    assertf(it != game_console_commands.end(), "Unknown game console command: %s\n", cmd_name.c_str());
-
-    std::vector<std::string> args(tokens.begin() + 1, tokens.end());
-    it->second(args);
-    return true;
+    return all_ok;
 }
 
 static std::map<std::string, std::map<std::string, EntityConsoleCommand>> entity_console_commands;

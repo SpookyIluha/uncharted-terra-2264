@@ -81,6 +81,8 @@ class Level {
         void draw();
         void free();
 
+        void save_eeprom();
+
 };
 
 extern Level currentlevel;

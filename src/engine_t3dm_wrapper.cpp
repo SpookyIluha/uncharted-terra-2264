@@ -9,23 +9,16 @@
 
 bool T3DMWModel::load(const char* filepath) {
     if(!transform_fp){
-        transform_fp = (T3DMat4FP*)malloc_uncached(sizeof(T3DMat4FP) * 3); // allocate one matrix for each framebuffer
+        transform_fp = (T3DMat4FP*)malloc_uncached(sizeof(T3DMat4FP) * 6); // allocate one matrix for each framebuffer
     }
-    t3d_mat4fp_from_srt_euler(&transform_fp[0],
+    for(int i = 0; i < 6; i++){
+        t3d_mat4fp_from_srt_euler(&transform_fp[i],
         {1.0f, 1.0f, 1.0f},
         {0.0f, 0.0f, 0.0f},
         {0.0f, 0.0f, 0.0f}
-    );
-    t3d_mat4fp_from_srt_euler(&transform_fp[1],
-        {1.0f, 1.0f, 1.0f},
-        {0.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f}
-    );
-    t3d_mat4fp_from_srt_euler(&transform_fp[2],
-        {1.0f, 1.0f, 1.0f},
-        {0.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f}
-    );
+        );
+    }
+    
 
     model = t3d_model_load(filepath);
     objects.clear();
@@ -100,7 +93,7 @@ bool T3DMWModel::load(const char* filepath) {
 
 void T3DMWModel::draw() {
     if (model) {
-        t3d_matrix_push(&transform_fp[FRAME_NUMBER % 3]);
+        t3d_matrix_push(&transform_fp[FRAME_NUMBER % 6]);
         state = t3d_model_state_create();
         for(const auto& obj : objects) {
             t3d_model_draw_material(obj.object->material, &state);  
@@ -111,10 +104,12 @@ void T3DMWModel::draw() {
                     break;
                 case 1:
                     t3d_fog_set_enabled(true);
+                    t3d_state_set_drawflags(static_cast<T3DDrawFlags>(obj.object->material->renderFlags | T3D_FLAG_SHADED));
                     rdpq_mode_blender(RDPQ_BLENDER((FOG_RGB, SHADE_ALPHA, IN_RGB, INV_MUX_ALPHA)));
                     break;
                 case 2:
                     t3d_fog_set_enabled(false);
+                    t3d_state_set_drawflags(static_cast<T3DDrawFlags>(obj.object->material->renderFlags | T3D_FLAG_SHADED));
                     rdpq_mode_blender(RDPQ_BLENDER((FOG_RGB, SHADE_ALPHA, IN_RGB, INV_MUX_ALPHA)));
                     break;
                 default:

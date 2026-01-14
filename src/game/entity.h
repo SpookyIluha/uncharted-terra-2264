@@ -48,7 +48,7 @@ protected:
 
     // Helper to register a function
     void register_console_command(const std::string& func_name, ConsoleCommand func) {
-        std::string key = class_type + "_" + func_name;
+        std::string key = name + "_" + func_name;
         if(commands.count(key) > 0) return;
         Entity::commands[key] = func;
         debugf("Registered console command '%s' for entity '%s'\n", (key).c_str(), name.c_str());

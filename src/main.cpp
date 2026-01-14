@@ -36,6 +36,7 @@ void systems_init(){
     filesystem_init();
     check_language_config();
     check_memory_expanded();
+    check_fast_graphics();
     engine_level_init();
     entity_register_all();
     subtitles_init();

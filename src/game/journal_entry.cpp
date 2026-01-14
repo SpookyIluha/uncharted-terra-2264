@@ -12,7 +12,7 @@ int journals_collected_count(){
     int count = 0;
     for(int i = 0; i < MAX_JOURNAL_ENTRIES; i++){
         if(gamestatus.state.game.journalscollectedbitflag & (1 << i)){
-            debugf("JournalEntry: journalscollectedbitflag: %d, i = %d\n", gamestatus.state.game.journalscollectedbitflag, i);
+            debugf("JournalEntry: journalscollectedbitflag: %ld, i = %d\n", gamestatus.state.game.journalscollectedbitflag, i);
             count++;
         }
     }

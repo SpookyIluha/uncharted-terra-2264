@@ -10,6 +10,7 @@
 #include "subtitles.h"
 #include "playtimelogic.h"
 #include "journal_entry.h"
+#include "utils.h"
 #include "player.h"
 
 player_t player;
@@ -56,7 +57,19 @@ bool intersectInner(fm_vec3_t* in, float width, float height, fm_vec3_t* out){
       out->z = ((height/2.0f) * sy);
     }
     return true;
-  }
+}
+
+
+void player_save_to_eeprom(){
+    memcpy(&gamestatus.state.game.playerpos, &player.position, sizeof(fm_vec3_t));
+    memcpy(&gamestatus.state.game.playerrot, &player.camera.rotation, sizeof(fm_vec3_t));
+}
+
+void player_load_from_eeprom(){
+    memcpy(&player.position, &gamestatus.state.game.playerpos, sizeof(fm_vec3_t));
+    memcpy(&player.camera.rotation, &gamestatus.state.game.playerrot, sizeof(fm_vec3_t));
+    fm_vec3_dir_from_euler(&player.camera.camTarget_off, &player.camera.rotation);
+}
 
 void player_init(){
     player.joypad.port = JOYPAD_PORT_1;
@@ -66,11 +79,13 @@ void player_init(){
     player.charheight = 1.7f;
     player.charwidth = 0.5f;
     player.position = (fm_vec3_t){{0,0,0}};
-    player.camera.aspect_ratio = (float)4 / (float)3;
+    player.camera.aspect_ratio = (float)display_get_width() / (float)display_get_height();
     player.camera.FOV = 60;
     player.camera.near_plane = T3D_TOUNITS(0.45f);
     player.camera.far_plane = T3D_TOUNITS(6.0f);
     player.camera.rotation = (fm_vec3_t){{0, 0, 0}};
+
+    player_load_from_eeprom();
 
     /*ui_play = sprite_load("rom:/ui_play.ia8.sprite");
     ui_play2 = sprite_load("rom:/ui_play2.ia8.sprite");
@@ -107,14 +122,30 @@ void player_use_item(uint8_t item_slot){
         subtitles_add(dictstr("PAUSE_nothing_to_use_on"), 4.0f, '\0');
         return;
     }
+
+    debugf("INFO: tried to use item with item_id %d\n", gamestatus.state.game.inventory[item_slot].item_id);
+
     if(gamestatus.state.game.inventory[item_slot].item_id == 0){
-        debugf("WARNING: tried to use item with item_id 0\n");
         return;
     }
     const std::string item_name = items_names[gamestatus.state.game.inventory[item_slot].item_id];
+    std::string command = "entity " + player_potential_user->get_name() + " use_item " + item_name;
+
     if(!execute_console_command("entity " + player_potential_user->get_name() + " use_item " + item_name)){
         subtitles_add("PAUSE_cant_use_item_on_this", 4.0f, '\0');
     }
+}
+
+int player_check_has_item(const std::string& item_name){
+    for(int i = 0; i < MAX_INVENTORY_SLOTS; i++){
+        if(gamestatus.state.game.inventory[i].item_id == 0){
+            continue;
+        }
+        if(items_names[gamestatus.state.game.inventory[i].item_id] == item_name){
+            return i;
+        }
+    }
+    return -1;
 }
 
 void player_inventory_additem(uint8_t item_id, uint8_t item_count){
@@ -224,6 +255,7 @@ void player_pause_menu(){
     sprite_t* button_b = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/button_b.rgba32").c_str());
     sprite_t* gradient = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/pause_gradient.i8").c_str());
     surface_t gradientsurf = sprite_get_pixels(gradient);
+    float displayheight = display_get_height();
 
     rspq_block_t* block = nullptr;
     rspq_wait();
@@ -358,10 +390,10 @@ void player_pause_menu(){
                 if(rowselector > collecteditems - 1) rowselector = 0;
                 selectorx = 120 - selector->width / 2;
                 item_list_draw_offset = maxi(0,rowselector - 3);
-                selectory = 160 + (rowselector-item_list_draw_offset)*40;
+                selectory = 100 + (rowselector-item_list_draw_offset)*40;
                 itemselectedselectorx = 120 - selector->width / 2;
                 if(item_selected_first != -1 && (rowselector-item_list_draw_offset >= 0 && rowselector-item_list_draw_offset <= 5)){
-                    itemselectedselectory = 160 + (item_selected_first-item_list_draw_offset)*40;
+                    itemselectedselectory = 100 + (item_selected_first-item_list_draw_offset)*40;
                 } else itemselectedselectory = -100;
                 if(btn.a && item_selected_first != -1){
                     player_use_item(player_inventory_get_ith_occupied_item_slot(item_selected_first));
@@ -389,7 +421,7 @@ void player_pause_menu(){
                 if(rowselector < 0) rowselector = 5;
                 if(rowselector > 5) rowselector = 0;
                 selectorx = 320 - selector->width / 2;
-                selectory = 160 + (rowselector)*40;
+                selectory = 100 + (rowselector)*40;
                 if(btn.a)
                     switch(rowselector){
                         case 0:{
@@ -401,6 +433,7 @@ void player_pause_menu(){
                             playtimelogic_savegame();
                             gamestatus.paused = false;
                             sound_play("menu/select", false);
+                            subtitles_add("gamesaved", 3.0f, '\0');
                         } break;
                         case 2:{
                             playtimelogic_loadgame();
@@ -425,7 +458,7 @@ void player_pause_menu(){
                 if(rowselector > collectedentries - 1) rowselector = 0;
                 journal_list_draw_offset = maxi(0, rowselector - 3);
                 selectorx = 520 - selector->width / 2;
-                selectory = 160 + (rowselector-journal_list_draw_offset)*40;
+                selectory = 100 + (rowselector-journal_list_draw_offset)*40;
                 if(btn.a){
                     player_pause_menu_show_journal_entry((rowselector + journal_list_draw_offset));
                 }
@@ -448,9 +481,9 @@ void player_pause_menu(){
         textparms.align = ALIGN_CENTER;
         textparms.wrap = WRAP_ELLIPSES;
 
-        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 320 - 100, 100, dictstr("PAUSE_paused"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 120 - 100, 100, dictstr("PAUSE_items"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 520 - 100, 100, dictstr("PAUSE_journals"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 320 - 100, 80, dictstr("PAUSE_paused"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 120 - 100, 80, dictstr("PAUSE_items"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 520 - 100, 80, dictstr("PAUSE_journals"));
 
         rdpq_set_mode_standard();
         rdpq_set_prim_color(RGBA32(255,255,255,255));
@@ -481,12 +514,12 @@ void player_pause_menu(){
             rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 50, dictstr("PAUSE_read_journal")); 
         }
         textparms.align = ALIGN_CENTER;
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 180, dictstr("PAUSE_continue")); 
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 220, dictstr("PAUSE_savegame"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 260, dictstr("PAUSE_loadgame"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 300, dictstr("PAUSE_togglemusic"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 340, dictstr("PAUSE_togglesounds"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 380, dictstr("PAUSE_exittomenu"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 120, dictstr("PAUSE_continue")); 
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 160, dictstr("PAUSE_savegame"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 200, dictstr("PAUSE_loadgame"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 240, dictstr("PAUSE_togglemusic"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 280, dictstr("PAUSE_togglesounds"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 320, dictstr("PAUSE_exittomenu"));
 
         textparms.width = 170;
         textparms.align = ALIGN_LEFT;
@@ -494,7 +527,7 @@ void player_pause_menu(){
         for(int i = item_list_draw_offset, drawnitems = 0; i < collecteditems && drawnitems < 6; i++, drawnitems++){
             int item_id = player_inventory_get_ith_occupied_item_slot_item_id(i);
             std::string itemname = (itemsdict[items_names[item_id]]["fullname"] | "UNKNOWN_ITEM_NAME");
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 50, 180 + i*40, 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 50, 120 + i*40, 
                 "%i: %s x %d", i+1, itemname.c_str(), 
                 player_inventory_get_item_count(item_id));
             if(i - item_list_draw_offset == rowselector && columnselector == 0){
@@ -511,7 +544,7 @@ void player_pause_menu(){
         
         for(int i = journal_list_draw_offset, drawnentries = 0; i < collectedentries && drawnentries < 6; i++, drawnentries++){
             int journal_entry_id = get_collected_journal_entry_id_by_collected_index(i);
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 450, 180 + i*40, 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 450, 120 + i*40, 
                 "%i: %s", i + 1, (journals[std::to_string(journal_entry_id)]["name"] | "UNKNOWN_TITLE").c_str());
         }
 
@@ -538,6 +571,8 @@ void player_update(){
     if(player.joypad.pressed.start){
         player_pause_menu();
     }
+
+    player_potential_user = nullptr;
 
     fm_vec3_t forward = {0}, right = {0}, lookat = {0}, wishdir = {0};
     fm_vec3_t eulerright = player.camera.rotation; eulerright.y += T3D_DEG_TO_RAD(90);
@@ -737,8 +772,8 @@ void player_draw_ui(){
     }
     prevbuffer = display_get_current_framebuffer();*/
     rdpq_sync_pipe();
-    rdpq_text_printf(NULL, 1, 20, 20, "Pos: %.2f, %.2f, %.2f", (player.position.x), (player.position.y), (player.position.z));
+    //rdpq_text_printf(NULL, 1, 20, 20, "Pos: %.2f, %.2f, %.2f", (player.position.x), (player.position.y), (player.position.z));
     rdpq_text_printf(NULL, 1, 20, 40, "FPS: %.2f", display_get_fps());
-    heap_stats_t stats; sys_get_heap_stats(&stats);
-    rdpq_text_printf(NULL, 1, 20, 60, "MEM: %i total, %i used", stats.total, stats.used);
+   // heap_stats_t stats; sys_get_heap_stats(&stats);
+    //rdpq_text_printf(NULL, 1, 20, 60, "MEM: %i total, %i used", stats.total, stats.used);
 }
