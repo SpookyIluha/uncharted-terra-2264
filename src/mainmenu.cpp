@@ -11,8 +11,6 @@
 #include "playtimelogic.h"
 #include "mainmenu.h"
 
-#define NUM_BUFFERS (is_memory_expanded()? 3 : 3)
-
 bool cont = false;
 
 camera_t maincamera;
@@ -23,32 +21,34 @@ T3DViewport viewport;
 void new_game();
 
 void game_start(){
-
+    resolution_t res;
     if(gamestatus.fastgraphics){
-        resolution_t res;
         res.width = 640;
-        res.height = 400;
+        res.height = is_memory_expanded()? 480 : 360;
         res.interlaced = INTERLACE_RDP;
         res.aspect_ratio = (float)res.width / (float)res.height;
         display_init(res,
             DEPTH_16_BPP,
-            3, GAMMA_NONE,
-            FILTERS_DISABLED
+            NUM_BUFFERS, GAMMA_NONE,
+            FILTERS_RESAMPLE_ANTIALIAS_DEDITHER
         );
     }
     else{
-        resolution_t res;
         res.width = 640;
-        res.height = 480;
+        res.height = is_memory_expanded()? 480 : 360;
         res.interlaced = INTERLACE_HALF;
         res.aspect_ratio = (float)res.width / (float)res.height;
         display_init(res,
             DEPTH_16_BPP,
-            3, GAMMA_NONE,
+            NUM_BUFFERS, GAMMA_NONE,
             FILTERS_RESAMPLE_ANTIALIAS_DEDITHER
         );
     }
-
+    if(get_tv_type() == TV_PAL && gamestatus.fastgraphics) {
+        int offset = is_memory_expanded()? 0 : 60;
+        vi_set_borders((vi_borders_t){.up = 48 + offset, .down = 48 + offset});
+        vi_set_yscale_factor(2.0f);
+    }
 
     while(true){
         game_menu();
@@ -78,10 +78,14 @@ void new_game(){
     std::stringstream buffer;
     buffer << t.rdbuf();
 
+    sound_play("ambience_intro", false);
+    bgm_stop(2.0f);
+
     while(!pressed_start && time < 70.0f){
         timesys_update();
         joypad_poll();
         time += display_get_delta_time();
+        audioutils_mixer_update();
 
         float alpha = 1.0f;
         if(time < 1.0f) alpha = time;
@@ -90,16 +94,18 @@ void new_game(){
         if(alpha < 0.0f) alpha = 0.0f;
 
         joypad_buttons_t pressed = joypad_get_buttons_pressed(JOYPAD_PORT_1);
+        pressed.raw |= joypad_get_buttons_pressed(JOYPAD_PORT_2).raw;
         if(pressed.start || pressed.a) pressed_start = true;
 
 
         rdpq_attach(display_get(), NULL);
+        if(display_interlace_rdp_field() >= 0) 
+            rdpq_enable_interlaced(display_interlace_rdp_field());
+        else rdpq_disable_interlaced();
         rdpq_clear(RGBA32(0,0,0,0));
-        rdpq_disable_interlaced();
-        if(gamestatus.fastgraphics){
-            rdpq_set_scissor(0,200 - 120,640, 200 + 120);
-        }
-        else rdpq_set_scissor(0,240 - 120,640, 240 + 120);
+        int scissor_y = display_get_height() / 2;
+        rdpq_set_scissor(0,scissor_y - 120,640, scissor_y + 120);
+
         rdpq_mode_zbuf(false,false);
         rdpq_sync_pipe();
         rdpq_sync_tile();
@@ -117,33 +123,21 @@ void new_game(){
 
         rdpq_mode_filter(FILTER_BILINEAR);
         rdpq_textparms_t parms; parms.align = ALIGN_LEFT; parms.width = display_get_width() - 80; parms.style_id = gamestatus.fonts.titlefontstyle; parms.wrap = WRAP_WORD;
-        rdpq_text_printf(&parms, gamestatus.fonts.titlefont, 40, (int)(400 - time * 10), buffer.str().c_str());
+        rdpq_text_printf(&parms, gamestatus.fonts.titlefont, 40, (int)(scissor_y + 140 - time * 10), buffer.str().c_str());
 
         rdpq_sync_tile();
         rdpq_detach_show();
     }
     rspq_wait();
     sprite_free(bg);
-
+    sound_stop();
+    
+    memset(&gamestatus.state.game, 0, sizeof(gamestatus.state.game));
     playtimelogic();
 }
 
 void game_draw(){
-
-  // Also create a buffered viewport to have a distinct matrix for each frame, avoiding corruptions if the CPU is too fast
-  // In an actual game make sure to free this viewport via 't3d_viewport_destroy' if no longer needed.
-
-
-  const T3DVec3 camPos = {{0,10.0f,40.0f}};
-  const T3DVec3 camTarget = {{0,0,0}};
-  const T3DVec3 camUp = {{0,1,0}};
-
   uint8_t colorAmbient[4] = {255, 255, 255, 0xFF};
-  uint8_t colorDir[4]     = {0xEE, 0xAA, 0xAA, 0xFF};
-
-  T3DVec3 lightDirVec = {{-1.0f, 1.0f, 1.0f}};
-  //t3d_vec3_norm(&lightDirVec);
-
   float rotAngle = 0.0f;
   int frameIdx = 0;
 
@@ -189,6 +183,9 @@ void game_draw(){
 }
 
 void game_menu(){
+    sound_stop();
+    bgm_stop(0);
+    bgm_play("dead_windmills", true, 0);
     sprite_t* bg = sprite_load(filesystem_getfn(DIR_IMAGE, "menu/gamelogo.ia8").c_str() );
     surface_t bgsurf = sprite_get_pixels(bg);
     sprite_t* button_a = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/button_a.rgba32").c_str());
@@ -197,7 +194,8 @@ void game_menu(){
     model = T3DMWModel();
     model.load(filesystem_getfn(DIR_MODEL, "mainmenu/model").c_str());
 
-
+    t3d_light_set_exposure(1);
+    cont = false;
     rdpq_textparms_s parmstext; parmstext.style_id = gamestatus.fonts.titlefontstyle; parmstext.disable_aa_fix = true;
 
     float time = 0;
@@ -213,10 +211,12 @@ void game_menu(){
     while(!pressed_start){
         timesys_update();
         joypad_poll();
+        audioutils_mixer_update();
         camlocationtimer += display_get_delta_time() / 12;
         if(camlocationtimer >= 1) {camidx++; camlocationtimer = 0;}
 
         joypad_buttons_t pressed = joypad_get_buttons_pressed(JOYPAD_PORT_1);
+        pressed.raw |= joypad_get_buttons_pressed(JOYPAD_PORT_2).raw;
         if(pressed.start || pressed.a) pressed_start = true;
 
         camidx = camidx % 5;
@@ -258,6 +258,7 @@ void game_menu(){
         rdpq_sync_tile();
         rdpq_detach_show();
     }
+    sound_play("select3", false);
 
     while(!gamestart){
         timesys_update();
@@ -316,11 +317,16 @@ void game_menu(){
             rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 500, height - 40 + posoffset, sound_volume_get() > 0? dictstr("MM_sounds_on") :dictstr ("MM_sounds_off"));
             joypad_poll();
 
+            //rdpq_text_printf(NULL, 1, 20, 40, "FPS: %.2f", display_get_fps());
+            //heap_stats_t stats; sys_get_heap_stats(&stats);
+            //rdpq_text_printf(NULL, 1, 20, 60, "MEM: %i total, %i used", stats.total, stats.used);
+
             joypad_buttons_t btn  = joypad_get_buttons_pressed(JOYPAD_PORT_1);
+            btn.raw |= joypad_get_buttons_pressed(JOYPAD_PORT_2).raw;
             int axis_stick_x = joypad_get_axis_pressed(JOYPAD_PORT_1, JOYPAD_AXIS_STICK_X);
 
-            if(btn.d_left || axis_stick_x < 0) {selection--; sound_play("menu/select", false);}
-            if(btn.d_right || axis_stick_x > 0) {selection++; sound_play("menu/select", false);}
+            if(btn.d_left || axis_stick_x < 0) {selection--; sound_play("select3", false);}
+            if(btn.d_right || axis_stick_x > 0) {selection++; sound_play("select3", false);}
             if(selection < 0) selection = 3;
             if(selection > 3) selection = 0;
             if(gamestatus.state_persistent.lastsavetype == SAVE_NONE && selection == 0) selection = 3;
@@ -329,17 +335,17 @@ void game_menu(){
                     case 0:{
                         bgm_stop(0); 
                         playtimelogic_loadgame();
-                        sound_play("menu/select", false); gamestart = true; cont = true;
+                        sound_play("select2", false); gamestart = true; cont = true;
                     } break;
                     case 1:{
-                        sound_play("menu/select", false); 
+                        sound_play("select2", false); 
                         gamestart = true;
                     } break;
                     case 2:{
-                        {music_volume(1 - music_volume_get()); sound_play("menu/select", false);}
+                        {music_volume(1 - music_volume_get()); sound_play("select2", false);}
                     } break;
                     case 3:{
-                        {sound_volume(1 - sound_volume_get()); sound_play("menu/select", false);}
+                        {sound_volume(1 - sound_volume_get()); sound_play("select2", false);}
                     } break;
                 }
         } 
@@ -349,7 +355,7 @@ void game_menu(){
     }
 
     rspq_wait();
-
+    //t3d_viewport_destroy(&viewport);
     sprite_free(bg);
     sprite_free(button_a);
     model.free();

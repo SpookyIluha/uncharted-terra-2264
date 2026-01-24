@@ -25,7 +25,8 @@ else:
 text.write("[Collision]\n\n")
 
 # Iterate over objects in the collection
-for index, obj in enumerate(collection.objects):
+sorted_objs = sorted(collection.objects, key=lambda o: o.name.lower())
+for index, obj in enumerate(sorted_objs):
     
     # Get world matrix
     world_mat = obj.matrix_world.copy()

@@ -78,7 +78,6 @@ bool T3DMWModel::load(const char* filepath) {
                         // ignore malformed numbers
                     }
                 }
-                const char* matname = iter.object->material->name;
             }
 
             objects.push_back(obj);
@@ -95,6 +94,7 @@ void T3DMWModel::draw() {
     if (model) {
         t3d_matrix_push(&transform_fp[FRAME_NUMBER % 6]);
         state = t3d_model_state_create();
+
         for(const auto& obj : objects) {
             t3d_model_draw_material(obj.object->material, &state);  
             rdpq_set_tile_size(TILE0, obj.hscroll, obj.vscroll, 1000, 1000);
@@ -118,6 +118,7 @@ void T3DMWModel::draw() {
             }
             rdpq_mode_zbuf(obj.zread, obj.zwrite);
             rdpq_mode_antialias(AA_REDUCED);
+            rdpq_mode_zmode(ZMODE_INTERPENETRATING);
             if(!obj.object->userBlock){
                 rspq_block_begin();
                 debugf("Drawing object: %s (renderorder=%d, zread=%d, zwrite=%d, hscroll=%.2f, vscroll=%.2f)\n",

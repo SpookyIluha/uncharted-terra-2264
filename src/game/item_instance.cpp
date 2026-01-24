@@ -128,6 +128,7 @@ void ItemInstance::update() {
                 if(player.joypad.pressed.a){
                     pickedup = true;
                     player_inventory_additem(item_id, 1);
+                    sound_play("item_pickup", false);
                     std::string pickupmessage = (itemsdict[name]["pickupmessage"] | "");
                     if(!pickupmessage.empty()){
                         subtitles_add(dictstr(pickupmessage.c_str()), 6.0f, '\0');

@@ -113,6 +113,7 @@ void JournalEntry::update() {
                 pickedup = true;
                 gamestatus.state.game.journalscollectedbitflag |= (1 << entry_id);
                 std::string pickupmessage = (journals[std::to_string(entry_id)]["pickupmessage"] | "");
+                sound_play("3beeps", false);
                 if(!pickupmessage.empty()){
                     subtitles_add(pickupmessage.c_str(), 6.0f, '\0');
                 } else{

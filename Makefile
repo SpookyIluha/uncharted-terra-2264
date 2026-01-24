@@ -37,7 +37,7 @@ ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(TEXT_LIST))
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(MOVIES_LIST))
 
 N64_CFLAGS += -std=gnu2x
-N64_C_AND_CXX_FLAGS += -I $(SOURCE_DIR) -I $(SOURCE_DIR)/$(GAME_SOURCE_DIR) -Wno-error=write-strings -Wno-error=narrowing -Wno-narrowing -Wno-write-strings -ftrivial-auto-var-init=zero
+N64_C_AND_CXX_FLAGS += -I $(SOURCE_DIR) -I $(SOURCE_DIR)/$(GAME_SOURCE_DIR) -Oz -DNDEBUG -ffunction-sections -fdata-sections -Wl,--gc-sections -Wno-error=write-strings -Wno-error=narrowing -Wno-narrowing -Wno-write-strings -ftrivial-auto-var-init=zero
 
 all: $(NAME).z64
 
@@ -49,7 +49,7 @@ $(FILESYSTEM_DIR)/textures/%.sprite: $(ASSETS_DIR)/textures/%.png
 $(FILESYSTEM_DIR)/models/%.sprite: $(ASSETS_DIR)/models/%.png
 	@mkdir -p $(dir $@)
 	@echo "    [SPRITE] $@"
-	$(N64_MKSPRITE) $(MKSPRITE_FLAGS) --mipmap NONE -v --compress 1 -o $(dir $@) "$<"
+	$(N64_MKSPRITE) $(MKSPRITE_FLAGS) --mipmap NONE --compress 1 -o $(dir $@) "$<"
 
 $(FILESYSTEM_DIR)/fonts/%.font64: $(ASSETS_DIR)/fonts/%.ttf
 	@mkdir -p $(dir $@)
@@ -59,7 +59,7 @@ $(FILESYSTEM_DIR)/fonts/%.font64: $(ASSETS_DIR)/fonts/%.ttf
 $(FILESYSTEM_DIR)/sfx/%.wav64: $(ASSETS_DIR)/sfx/%.wav
 	@mkdir -p $(dir $@)
 	@echo "    [SFX] $@"
-	$(N64_AUDIOCONV) $(AUDIOCONV_FLAGS) --wav-compress 1,bits=3 --wav-resample 28000 -o $(dir $@) "$<"
+	$(N64_AUDIOCONV)  --wav-compress 1,bits=3 --wav-resample 28000 $(AUDIOCONV_FLAGS) -o $(dir $@) "$<"
 
 $(FILESYSTEM_DIR)/music/%.wav64: $(ASSETS_DIR)/music/%.wav
 	@mkdir -p $(dir $@)
@@ -69,7 +69,7 @@ $(FILESYSTEM_DIR)/music/%.wav64: $(ASSETS_DIR)/music/%.wav
 $(FILESYSTEM_DIR)/music/%.xm64: $(ASSETS_DIR)/music/%.xm
 	@mkdir -p $(dir $@)
 	@echo "    [MUSIC] $@"
-	$(N64_AUDIOCONV) $(AUDIOCONV_FLAGS) -o $(dir $@) "$<"
+	$(N64_AUDIOCONV) $(AUDIOCONV_FLAGS) --xm-compress 1 -o $(dir $@) "$<"
 
 $(FILESYSTEM_DIR)/%.t3dm: assets/%.glb
 	@mkdir -p $(dir $@)

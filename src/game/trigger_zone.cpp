@@ -29,7 +29,8 @@ void TriggerZone::init() {
 }
 
 bool TriggerZone::check_collision() {
-    return collideAABB(&player.position, 0, &transform.position, &transform.scale, nullptr);
+    fm_vec3_t t;
+    return collideAABB(&player.position, 0, &transform.position, &transform.scale, &t);
 }
 
 void TriggerZone::update() {

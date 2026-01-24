@@ -10,6 +10,10 @@
 
 std::map<std::string, ConsoleCommand> Entity::commands;
 
+void Entity::clear_commands(){
+    Entity::commands.clear();
+}
+
 // Entity class implementation
 Entity::Entity(const std::string& entity_name, const std::string& entity_class_type, int entity_id)
     : name(entity_name), class_type(entity_class_type), unique_id(entity_id) {
@@ -63,6 +67,7 @@ Entity* EntitySystem::create_entity(const std::string& class_type, const std::st
 void EntitySystem::load_entities_from_ini(const std::string& levelname) {
     // Clear existing entities first
     clear_all();
+    Entity::clear_commands();
     
     // Load entities.ini file
     std::string entities_filename = filesystem_getfn(DIR_SCRIPT, (std::string("levels/") + levelname + ".entities.ini").c_str());

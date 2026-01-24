@@ -9,11 +9,16 @@
 extern "C"{
 #endif
 
-#define AUDIO_CHANNEL_MUSIC 0
-#define AUDIO_CHANNEL_SOUND 2
+#define AUDIO_CHANNEL_MUSIC 8
+#define AUDIO_CHANNEL_MUSIC_CHANNELS 12
+#define AUDIO_CHANNEL_SOUND_BASE 0
+#define SOUND_SLOT_COUNT 4
+#define AUDIO_MAX_CHANNELS 20
 
 /// @brief Should be called on each game tick for audio to be played (between rdpq_attach and rdpq_detach)
 void audioutils_mixer_update();
+
+void audio_prewarm_all();
 
 /// @brief Play music in the background
 /// @param name fn of the music in the bgm folder
@@ -33,6 +38,8 @@ void sound_play(const char* name, bool loop);
 /// @brief Stop the currently playing music
 void sound_stop();
 
+void sound_stop_looping(const char* name);
+
 /// @brief Set the music volume
 /// @param vol 0-1 range
 void music_volume(float vol);
@@ -48,6 +55,8 @@ float music_volume_get();
 /// @brief Get the sounds current volume
 /// @return 0-1 float
 float sound_volume_get();
+
+void audio_console_commands_init();
 
 #ifdef __cplusplus
 }

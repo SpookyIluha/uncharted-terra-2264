@@ -45,22 +45,13 @@ void loadgame(){
 
 void playtimelogic(){
   must_goto_main_menu = false;
-  const T3DVec3 camPos = {{0,0.0f,0.0f}};
-  const T3DVec3 camTarget = {{0,0,0}};
-  const T3DVec3 camUp = {{0,1,0}};
-
-  uint8_t colorAmbient[4] = {255, 255, 255, 0xFF};
-  uint8_t colorDir[4]     = {0xEE, 0xAA, 0xAA, 0xFF};
-
-  T3DVec3 lightDirVec = {{-1.0f, 1.0f, 1.0f}};
   T3DViewport viewport = t3d_viewport_create_buffered(12);
-  int frameIdx = 0;
   
   player_init();
+  surface_t zbuffer = surface_alloc(FMT_RGBA16, display_get_width(), display_get_height());
 
   if(!must_load_game_on_next_frame){
     currentlevel.load(gamestatus.startlevelname);
-    player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
   }
   
   while(!must_goto_main_menu){
@@ -73,6 +64,7 @@ void playtimelogic(){
       player_init();
       must_load_game_on_next_frame = false;
     }
+    player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
     // ======== Update ======== //
     timesys_update();
     joypad_poll();
@@ -84,15 +76,17 @@ void playtimelogic(){
     EntitySystem::update_all(); // Update all entities
 
     // ======== Draw ======== //
-    rdpq_attach(display_get(), display_get_zbuf());
-    rdpq_clear_z(ZBUF_MAX);
-
-    t3d_frame_start();
-    t3d_viewport_attach(&viewport);
+    rdpq_attach(display_get(), &zbuffer);
 
     if(display_interlace_rdp_field() >= 0) 
         rdpq_enable_interlaced(display_interlace_rdp_field());
     else rdpq_disable_interlaced();
+
+    rdpq_clear_z(ZBUF_MAX);
+    mixer_try_play();
+
+    t3d_frame_start();
+    t3d_viewport_attach(&viewport);
 
     player_draw(&viewport);
 
@@ -100,7 +94,7 @@ void playtimelogic(){
     temporal_dither(FRAME_NUMBER);
     rdpq_mode_persp(true);
     t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
-
+    mixer_try_play();
     rdpq_mode_antialias(AA_REDUCED);
     rdpq_mode_zmode(ZMODE_INTERPENETRATING);
     currentlevel.draw();
@@ -109,7 +103,12 @@ void playtimelogic(){
     player_draw_ui();
     subtitles_draw();
     traversal_fade_draw(); // Draw fade from black overlay
+    mixer_try_play();
     rdpq_detach_show();
+    mixer_try_play();
   }
   rspq_wait();
+  t3d_viewport_destroy(&viewport);
+  surface_free(&zbuffer);
+  currentlevel.free();
 }

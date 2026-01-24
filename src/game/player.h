@@ -24,6 +24,7 @@ typedef struct {
         joypad_buttons_t pressed;
         joypad_buttons_t held;
         joypad_port_t port;
+        joypad_port_t mouseport;
     } joypad;
     camera_t  camera;
 

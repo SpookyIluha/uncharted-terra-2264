@@ -42,6 +42,7 @@ InteractiveModel::InteractiveModel(const std::string& name, int id)
                 debugf("InteractiveModel '%s': Could not find item ID for '%s'\n", get_name().c_str(), item_name.c_str());
             }
         }
+        iteminserted = true;
     });
 }
 
@@ -88,7 +89,7 @@ void InteractiveModel::update() {
     float dist = fm_vec3_distance(&transform.position, &player.position);
     
     if (dist < range && !iteminserted) {
-        //subtitles_add(dictstr("somethingcanbeputhere"), 1.0f, '\0');
+        subtitles_add(dictstr("somethingcanbeputhere"), 1.0f, '\0');
         player_potential_user = this;
     }
     if(dist < range && iteminserted && retrievable){

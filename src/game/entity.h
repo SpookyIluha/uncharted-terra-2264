@@ -61,6 +61,7 @@ public:
     bool enabled;
     Entity(const std::string& entity_name, const std::string& entity_class_type, int entity_id);
     virtual ~Entity() = default;
+    static void clear_commands();
 
     // Getters
     const std::string& get_name() const { return name; }

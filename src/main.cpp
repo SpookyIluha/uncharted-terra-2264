@@ -8,18 +8,19 @@
 #include "mainmenu.h"
 #include "level.h"
 #include "subtitles.h"
+#include "audioutils.h"
 #include "game/entity_register.h"
 
 void systems_init(){
-    debug_init_isviewer();
-    debug_init_usblog();
+    //debug_init_isviewer();
+    //debug_init_usblog();
 
     dfs_init(DFS_DEFAULT_LOCATION);
     //asset_init_compression(3);
     //wav64_init_compression(3);
 
     audio_init(28000, 4);
-    mixer_init(24);
+    mixer_init(AUDIO_MAX_CHANNELS);
 
     rdpq_init();
     timer_init();
@@ -40,13 +41,15 @@ void systems_init(){
     engine_level_init();
     entity_register_all();
     subtitles_init();
+    audio_prewarm_all();
+    audio_console_commands_init();
 }
 
 int main(void)
 {
     systems_init();
-    //libdragon_logo();
-    //movie_play("rom:/movies/intrologo.m1v", NULL, 15);
-    //game_logo();
+    libdragon_logo();
+    movie_play("rom:/movies/intrologo.m1v", "rom:/sfx/intro/stinger.wav64", 15);
+    game_logo();
     game_start();
 }

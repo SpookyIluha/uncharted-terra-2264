@@ -4,6 +4,7 @@ filesystem/
 reference/
 boxart/
 movies/
+screenshots/
 *.z64
 .vscode/
 *.eeprom

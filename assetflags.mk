@@ -17,6 +17,11 @@ filesystem/fonts/jp/NikkyouSans-mLKax.font64: 			MKFONT_FLAGS+= --size 38   --ch
 filesystem/textures/%.sprite: MKSPRITE_FLAGS += --dither ORDERED
 filesystem/models/%.sprite:  MKSPRITE_FLAGS += --mipmap BOX
 
-filesystem/music/1_select.wav64:  AUDIOCONV_FLAGS += --wav-compress 3
-filesystem/music/7_theme.wav64:  AUDIOCONV_FLAGS += --wav-compress 3
-filesystem/music/9_congrats.wav64:  AUDIOCONV_FLAGS += --wav-compress 3
+filesystem/sfx/ambience/ambience0.wav64:  AUDIOCONV_FLAGS += --wav-resample 11050
+filesystem/sfx/ambience/ambience1.wav64:  AUDIOCONV_FLAGS += --wav-resample 11050
+filesystem/sfx/ambience/ambience2.wav64:  AUDIOCONV_FLAGS += --wav-resample 11050
+filesystem/sfx/ambience/ambience3.wav64:  AUDIOCONV_FLAGS += --wav-resample 11050
+filesystem/sfx/ambience/ambience4.wav64:  AUDIOCONV_FLAGS += --wav-resample 11050
+filesystem/sfx/ambience/ambience5.wav64:  AUDIOCONV_FLAGS += --wav-resample 11050
+filesystem/sfx/ambience/ambience6.wav64:  AUDIOCONV_FLAGS += --wav-resample 11050
+filesystem/sfx/ambience/ambience_intro.wav64:  AUDIOCONV_FLAGS += --wav-resample 7000 --wav-compress 1,bits=2

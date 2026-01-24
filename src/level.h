@@ -59,6 +59,10 @@ class Level {
 
         float   drawdistance;
 
+        std::string floormaterial;
+        std::string ambience;
+        std::string music;
+
         struct{
             bool enabled;
             bool bloomenabled;

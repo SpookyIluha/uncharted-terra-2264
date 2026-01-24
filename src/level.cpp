@@ -10,6 +10,7 @@
 #include "engine_filesystem.h"
 #include "engine_t3dm_wrapper.h"
 #include "engine_gamestatus.h"
+#include "audioutils.h"
 #include "utils.h"
 #include "level.h"
 #include "player.h"
@@ -113,8 +114,8 @@ void bloom_draw(void* framebuffer, sprite_t* bloomsprite){
     samples_x = resx / BLOOM_SIZE;
     samples_y = resy / BLOOM_SIZE;
 
-    for(int y = 0; y < samples_y; y++){
-        for(int x = 0; x < samples_x; x++){
+    for(int y = 1; y < samples_y * 0.65f; y++){
+        for(int x = 1; x < samples_x - 1; x++){
             if(custom_rand() & 0x1) continue;
             int offsetx = (custom_rand() & 0xF) - 7;
             int offsety = (custom_rand() & 0xF) - 7;
@@ -207,6 +208,10 @@ void Level::load(char* levelname){
         debugf("Level %s: fog near distance set to %f\n", levelname, fogneardistance);
         debugf("Level %s: draw distance set to %f\n", levelname, drawdistance);
 
+        floormaterial = ini["General"]["floormaterial"] | "concrete";
+        ambience = ini["General"]["ambience"] | "";
+        music = ini["General"]["music"] | "";
+
         std::string levelmodel_str = ini["General"]["levelmodel"] | "";
         assertf(!levelmodel_str.empty(), "Level %s: levelmodel not specified", levelname);
         levelmodel.load(filesystem_getfn(DIR_MODEL, ("levels/" + levelmodel_str).c_str()).c_str());
@@ -221,7 +226,6 @@ void Level::load(char* levelname){
 
         int enabledcollisioncount = 0;
         for(int i = 0; i < MAX_AABB_COLLISIONS; i++) {
-            fm_vec3_t center, half_extents;
             aabb_collisions[i].center = string_to_vec((ini["Collision"]["colpos" + std::to_string(i)] | "0 0 0").c_str());
             aabb_collisions[i].half_extents = string_to_vec((ini["Collision"]["colscl" + std::to_string(i)] | "0 0 0").c_str());
             aabb_collisions[i].enabled = ini["Collision"]["colenb" + std::to_string(i)] | false;
@@ -248,7 +252,6 @@ void Level::load(char* levelname){
 
             assertf(traversals[traversalcount].destinationlevel, "Traversal %s: destination level not specified", pair.name.c_str());
 
-            fm_vec3_t center, half_extents;
             traversals[traversalcount].collision.center = string_to_vec((pair.section["position"] | "0 0 0").c_str());
             traversals[traversalcount].collision.half_extents = string_to_vec((pair.section["scale"] | "0 0 0").c_str());
             traversals[traversalcount].collision.enabled = pair.section["enabled"] | true;
@@ -273,6 +276,16 @@ void Level::load(char* levelname){
     debugf("Level '%s' loaded successfully\n", levelname);
     traversal_fade_time = TRAVERSAL_FADE_DURATION;
     traversal_fade_active = true;
+    
+    sound_stop();
+    if(!music.empty()){
+        bgm_play(music.c_str(), true, 0.0f);
+    } else {
+        bgm_stop(0.0f);
+    }
+    if(!ambience.empty()){
+        sound_play(ambience.c_str(), true);
+    }
 }
 
 

@@ -2,6 +2,7 @@
 #include <vector>
 #include "engine_filesystem.h"
 #include "engine_gamestatus.h"
+#include "utils.h"
 #include "intro.h"
 
 void check_memory_expanded(){
@@ -24,8 +25,9 @@ void check_memory_expanded(){
 void check_fast_graphics(){
     joypad_poll();
     joypad_inputs_t input = joypad_get_inputs(JOYPAD_PORT_1);
+    gamestatus.fastgraphics = is_memory_expanded()? false : false;
     if(input.btn.z){
-        gamestatus.fastgraphics = true;
+        gamestatus.fastgraphics = !gamestatus.fastgraphics;
     }
 }
 
@@ -35,6 +37,7 @@ void check_language_config(){
     if(engine_get_language()){
         debugf("Game language: %s\n", engine_get_language());
         engine_load_dictionary();
+        engine_config_load();
         return;
     }
     else{
@@ -51,7 +54,7 @@ void check_language_config(){
         engine_set_language(languages_keys[0]);
         engine_load_dictionary();
         engine_config_load();
-        display_init(RESOLUTION_640x480, DEPTH_16_BPP, 2, GAMMA_NONE, FILTERS_DEDITHER);
+        display_init(RESOLUTION_640x480, DEPTH_16_BPP, NUM_BUFFERS, GAMMA_NONE, FILTERS_DEDITHER);
 
         while(!isselected){
             rdpq_textparms_t textparms; textparms.align = ALIGN_CENTER;

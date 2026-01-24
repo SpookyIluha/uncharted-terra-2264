@@ -2,6 +2,11 @@
 #include "utils.h"
 #include "intro.h"
 
+float frandr2( float min, float max )
+{
+    float scale = rand() / (float) RAND_MAX; /* [0, 1.0] */
+    return min + scale * ( max - min );      /* [min, max] */
+}
 
 void libdragon_logo()
 {
@@ -257,7 +262,7 @@ void movie_play(char* moviefilename, char* audiofilename, float movie_fps)
         fclose(f);
 
         wav64_open(&audio_track, audiofilename);
-        mixer_ch_play(0, &audio_track.wave);
+        wav64_play(&audio_track, 0);
     }
 
 
@@ -295,9 +300,12 @@ void movie_play(char* moviefilename, char* audiofilename, float movie_fps)
     mpeg2_close(video_track);
     yuv_blitter_free(&yuv);
     if(audiofilename){
+        mixer_ch_stop(0);
+        mixer_ch_stop(1);
         wav64_close(&audio_track);
     }
     display_close();
+    yuv_close();
 }
 
 void game_logo(){
@@ -310,7 +318,7 @@ void game_logo(){
 			.aspect_ratio = (float)640 / 240,
 		},
 		DEPTH_16_BPP,
-		3, GAMMA_NONE,
+		NUM_BUFFERS, GAMMA_NONE,
 		FILTERS_RESAMPLE
 	);
 
@@ -318,7 +326,16 @@ void game_logo(){
     int xstart, ystart;
     xstart = 320 - logo->width / 2;
     ystart = 120 - logo->height / 2;
+
+    // Open the audio track and start playing it in channel 0.
+	wav64_t audio_track;
+    {
+        wav64_open(&audio_track, "rom:/sfx/intro/stinger2.wav64");
+        wav64_play(&audio_track, 0);
+    }
+    mixer_unthrottle();
     while(time > 0.0f){
+        mixer_try_play();
 
         float alpha = 1;
         if(time >= 4) alpha = ((6.0 - time) / 2.0f);
@@ -330,12 +347,14 @@ void game_logo(){
         rdpq_attach_clear(fb, NULL);
 
         rdpq_set_mode_standard();
-        rdpq_mode_combiner(RDPQ_COMBINER1((TEX0,0,PRIM,0),(0,0,0,1)));
-        rdpq_set_prim_color(RGBA32(col,col,col,255));
+        rdpq_mode_combiner(RDPQ_COMBINER2((PRIM,ENV,PRIM_ALPHA,ENV),(0,0,0,1), (TEX0_BUG,0,COMBINED,0),(0,0,0,1)));
+        rdpq_set_prim_color(RGBA32(col,col,col,col - 20));
 
         for(int i = 0; i < logo->height; i++){
             surface_t surf = surface_make_sub(&logosurf, 0, i, logosurf.width, 1);
-            int random = frandr(-alpha*40, alpha*40);
+            int random = frandr2(-alpha*40, alpha*40);
+            int random2 = rand() % 3;
+            rdpq_set_env_color(RGBA32(random2 == 0? col : 0, random2 == 1? col : 0, random2 == 2? col : 0,255));
             rdpq_tex_blit(&surf, xstart + random, ystart + i, NULL);
         }
 
@@ -343,9 +362,14 @@ void game_logo(){
 
         time -= display_get_delta_time();
     }
-
+    mixer_ch_stop(0);
+    mixer_ch_stop(1);
     rspq_wait();
+    wav64_close(&audio_track);
 
+    wait_ms(500); // avoid immediate switch to next screen
+    rspq_wait();
+    
     sprite_free(logo);
     display_close();
 }

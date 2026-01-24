@@ -26,7 +26,7 @@ void subtitles_init(){
 
     register_game_console_command("say", [](const std::vector<std::string>& args){
         assert(args.size() == 1 || args.size() == 2);
-        float duration = std::max(args[0].length() * (1.0f / CHARACTERS_PER_SEC_DISPLAY), 2.0f);
+        float duration = std::max(args[0].length() * (1.0f / CHARACTERS_PER_SEC_DISPLAY), 5.0f);
         subtitles_add(dictstr(args[0].c_str()), duration, args.size() == 2 ? args[1][0] : '\0');
     });
 }

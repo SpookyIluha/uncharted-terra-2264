@@ -15,6 +15,7 @@
 
 player_t player;
 int frame = 0;
+float pltime = 0;
 sprite_t* ui_play;
 sprite_t* ui_play2;
 sprite_t* ui_play3;
@@ -25,40 +26,6 @@ wav64_t fldisablesound;
 wav64_t flenablesound;
 wav64_t fllockedsound;
 surface_t prevbuffer = {0};
-
-
-
-bool intersectInner(fm_vec3_t* in, float width, float height, fm_vec3_t* out){
-    float dx = in->x;
-    float px = (width/2.0f) - abs(dx);
-    if (px <= 0) {
-      return false;
-    }
-
-    float dy = in->z;
-    float py = (height/2.0f) - abs(dy);
-    if (py <= 0) {
-      return false;
-    }
-
-    fm_vec3_t delta = {0};
-    fm_vec3_t normal = {0};
-    if (px < py) {
-      float sx = copysignf(1.0, dx);
-      delta.x = px * sx;
-      normal.x = sx;
-      out->x = ((width/2.0f) * sx);
-      out->z = in->z;
-    } else {
-      float sy = copysignf(1.0, dy);
-      delta.z = py * sy;
-      normal.z = sy;
-      out->x = in->x;
-      out->z = ((height/2.0f) * sy);
-    }
-    return true;
-}
-
 
 void player_save_to_eeprom(){
     memcpy(&gamestatus.state.game.playerpos, &player.position, sizeof(fm_vec3_t));
@@ -73,6 +40,7 @@ void player_load_from_eeprom(){
 
 void player_init(){
     player.joypad.port = JOYPAD_PORT_1;
+    player.joypad.mouseport = JOYPAD_PORT_2;
 
     player.maxspeed = (1.5f);
     player.speedaccel = (8.0f);
@@ -233,8 +201,10 @@ uint8_t player_inventory_get_ith_occupied_item_slot(int i){
 void player_inventory_combine_items(uint8_t slot1, uint8_t slot2){
     int item_id = items_check_combine_recepies(gamestatus.state.game.inventory[slot1].item_id, gamestatus.state.game.inventory[slot2].item_id);
     if(item_id == -1){
+        sound_play("screw", false);
         return;
     }
+    sound_play("itemuse", false);
 
     uint8_t item_count = 1;
     player_inventory_removeitem_by_slot(slot1, item_count);
@@ -253,9 +223,6 @@ void player_pause_menu(){
     sprite_t* bg_b = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/pause_bg_b.i4").c_str());
     sprite_t* button_a = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/button_a.rgba32").c_str());
     sprite_t* button_b = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/button_b.rgba32").c_str());
-    sprite_t* gradient = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/pause_gradient.i8").c_str());
-    surface_t gradientsurf = sprite_get_pixels(gradient);
-    float displayheight = display_get_height();
 
     rspq_block_t* block = nullptr;
     rspq_wait();
@@ -329,7 +296,7 @@ void player_pause_menu(){
             rdpq_detach_show();
         }
         rspq_wait();
-        sound_play("menu/select", false);
+        sound_play("select2", false);
         rdpq_paragraph_free(paragraph); paragraph = NULL;
     };
 
@@ -349,6 +316,8 @@ void player_pause_menu(){
     int collecteditems = player_inventory_count_occupied_item_slots();
     debugf("collecteditems: %d\n", collecteditems);
 
+    sound_play("pause_start", false);
+
     while(gamestatus.paused){
         joypad_poll();
         audioutils_mixer_update();
@@ -362,13 +331,24 @@ void player_pause_menu(){
         player.joypad.held = joypad_get_buttons_held(player.joypad.port);
 
         joypad_buttons_t btn  = player.joypad.pressed;
+        btn.raw |= joypad_get_buttons_pressed(player.joypad.mouseport).raw;
         int axis_stick_x = joypad_get_axis_pressed(player.joypad.port, JOYPAD_AXIS_STICK_X);
         int axis_stick_y = joypad_get_axis_pressed(player.joypad.port, JOYPAD_AXIS_STICK_Y);
+        int mouse_axis_stick_x = joypad_get_axis_pressed(player.joypad.mouseport, JOYPAD_AXIS_STICK_X);
+        if(mouse_axis_stick_x != 0){
+            axis_stick_x = mouse_axis_stick_x;
+        }
+        int mouse_axis_stick_y = joypad_get_axis_pressed(player.joypad.mouseport, JOYPAD_AXIS_STICK_Y);
+        if(mouse_axis_stick_y != 0){
+            axis_stick_y = mouse_axis_stick_y;
+        }
 
-        if(btn.d_left || axis_stick_x < 0) {columnselector--; rowselector = 0; sound_play("menu/select", false);}
-        if(btn.d_right || axis_stick_x > 0) {columnselector++; rowselector = 0; sound_play("menu/select", false);}
-        if(btn.d_up || axis_stick_y > 0) {rowselector--; sound_play("menu/select", false);}
-        if(btn.d_down || axis_stick_y < 0) {rowselector++; sound_play("menu/select", false);}
+        const char* select_sound = "inventoryselect";
+
+        if(btn.d_left || axis_stick_x < 0) {columnselector--; rowselector = 0; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false);}
+        if(btn.d_right || axis_stick_x > 0) {columnselector++; rowselector = 0; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false);}
+        if(btn.d_up || axis_stick_y > 0) {rowselector--; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false);}
+        if(btn.d_down || axis_stick_y < 0) {rowselector++; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false);}
 
         if(btn.start) {
             gamestatus.paused = false;
@@ -402,12 +382,12 @@ void player_pause_menu(){
                 }
                 else {
                     if(btn.a && item_selected_first == -1){
-                        sound_play("menu/select", false);
+                        sound_play("select2", false);
                         item_selected_first = rowselector;
                     }
                 }
                 if(btn.b && item_selected_first != -1){
-                    sound_play("menu/select", false);
+                    sound_play("select2", false);
                     item_selected_second = rowselector;
                     int left_item_slot = player_inventory_get_ith_occupied_item_slot(item_selected_first);
                     int right_item_slot = player_inventory_get_ith_occupied_item_slot(item_selected_second);
@@ -426,30 +406,36 @@ void player_pause_menu(){
                     switch(rowselector){
                         case 0:{
                             gamestatus.paused = false;
-                            sound_play("menu/select", false);
+                            sound_play("select2", false);
                             continue;
                         } break;
                         case 1:{
                             playtimelogic_savegame();
                             gamestatus.paused = false;
-                            sound_play("menu/select", false);
-                            subtitles_add("gamesaved", 3.0f, '\0');
+                            sound_play("select2", false);
+                            subtitles_add(dictstr("MM_saved"), 3.0f, '\0');
                         } break;
                         case 2:{
-                            playtimelogic_loadgame();
-                            gamestatus.paused = false;
-                            sound_play("menu/select", false);
+                            if(gamestatus.state_persistent.manualsaved){
+                                playtimelogic_loadgame();
+                                gamestatus.paused = false;
+                                sound_play("select2", false);
+                            } else {
+                                subtitles_add(dictstr("MM_savenfound"), 3.0f, '\0');
+                                gamestatus.paused = false;
+                                sound_play("select2", false);
+                            }
                         } break;
                         case 3:{
-                            {music_volume(1 - music_volume_get()); sound_play("menu/select", false);}
+                            {music_volume(1 - music_volume_get()); sound_play("select2", false);}
                         } break;
                         case 4:{
-                            {sound_volume(1 - sound_volume_get()); sound_play("menu/select", false);}
+                            {sound_volume(1 - sound_volume_get()); sound_play("select2", false);}
                         } break;
                         case 5:{
                             playtimelogic_gotomainmenu();
                             gamestatus.paused = false;
-                            sound_play("menu/select", false);
+                            sound_play("select2", false);
                         } break;
                     }
             } break;
@@ -460,7 +446,8 @@ void player_pause_menu(){
                 selectorx = 520 - selector->width / 2;
                 selectory = 100 + (rowselector-journal_list_draw_offset)*40;
                 if(btn.a){
-                    player_pause_menu_show_journal_entry((rowselector + journal_list_draw_offset));
+                    sound_play("journal", false);
+                    player_pause_menu_show_journal_entry(rowselector);
                 }
             } break;
             default: break;
@@ -525,32 +512,34 @@ void player_pause_menu(){
         textparms.align = ALIGN_LEFT;
 
         for(int i = item_list_draw_offset, drawnitems = 0; i < collecteditems && drawnitems < 6; i++, drawnitems++){
+            int item_slot = player_inventory_get_ith_occupied_item_slot(i);
             int item_id = player_inventory_get_ith_occupied_item_slot_item_id(i);
             std::string itemname = (itemsdict[items_names[item_id]]["fullname"] | "UNKNOWN_ITEM_NAME");
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 50, 120 + i*40, 
+            int y = 120 + drawnitems*40;
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 50, y, 
                 "%i: %s x %d", i+1, itemname.c_str(), 
-                player_inventory_get_item_count(item_id));
-            if(i - item_list_draw_offset == rowselector && columnselector == 0){
+                player_inventory_get_item_count(item_slot));
+            if(i == rowselector && columnselector == 0){
                 rdpq_textparms_t descparms;
                 descparms.width = display_get_width() - 60;
                 descparms.align = ALIGN_LEFT;
                 descparms.wrap = WRAP_WORD;
                 rdpq_text_printf(&descparms, gamestatus.fonts.subtitlefont, 30, 420, 
-                "%s x %d. %s", itemname.c_str(), 
-                player_inventory_get_item_count(item_id), (itemsdict[items_names[item_id]]["description"] | "UNKNOWN_ITEM_DESCRIPTION").c_str());
+                    "%s x %d. %s", itemname.c_str(), 
+                    player_inventory_get_item_count(item_slot), (itemsdict[items_names[item_id]]["description"] | "UNKNOWN_ITEM_DESCRIPTION").c_str());
             }
-
         }
         
         for(int i = journal_list_draw_offset, drawnentries = 0; i < collectedentries && drawnentries < 6; i++, drawnentries++){
             int journal_entry_id = get_collected_journal_entry_id_by_collected_index(i);
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 450, 120 + i*40, 
+            int y = 120 + drawnentries*40;
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 450, y, 
                 "%i: %s", i + 1, (journals[std::to_string(journal_entry_id)]["name"] | "UNKNOWN_TITLE").c_str());
         }
 
         rdpq_detach_show();
     }
-
+    sound_play("pause_end", false);
     rspq_wait();
 
     if(block) {rspq_block_free(block);} block = NULL;
@@ -560,7 +549,6 @@ void player_pause_menu(){
     sprite_free(bg_b);
     sprite_free(button_a);
     sprite_free(button_b);
-    sprite_free(gradient);
 }
 
 void player_update(){
@@ -568,16 +556,28 @@ void player_update(){
     player.joypad.pressed = joypad_get_buttons_pressed(player.joypad.port);
     player.joypad.held = joypad_get_buttons_held(player.joypad.port);
 
+    joypad_inputs_t mouseinput = joypad_get_inputs(player.joypad.mouseport);
+
+    if (mouseinput.stick_x > 20 || mouseinput.stick_x < -20)
+        player.joypad.input.stick_x = mouseinput.stick_x;
+    if (mouseinput.stick_y > 20 || mouseinput.stick_y < -20)
+        player.joypad.input.stick_y = mouseinput.stick_y;
+    
+    player.joypad.pressed.raw |= joypad_get_buttons_pressed(player.joypad.mouseport).raw;
+    player.joypad.held.raw |= joypad_get_buttons_held(player.joypad.mouseport).raw;
+
     if(player.joypad.pressed.start){
         player_pause_menu();
     }
 
     player_potential_user = nullptr;
 
-    fm_vec3_t forward = {0}, right = {0}, lookat = {0}, wishdir = {0};
+    fm_vec3_t forward = {0}, right = {0}, wishdir = {0};
     fm_vec3_t eulerright = player.camera.rotation; eulerright.y += T3D_DEG_TO_RAD(90);
     float maxspeed = player.maxspeed;
-    if((player.joypad.held.l || player.joypad.held.r) && !player.joypad.held.z && (player.joypad.held.d_up || player.joypad.held.c_up)) maxspeed *= 2.0f;
+    bool running = false;
+    if((player.joypad.held.l || player.joypad.held.r) && !player.joypad.held.z && (player.joypad.held.d_up || player.joypad.held.c_up)) running = true;
+    if(running) maxspeed *= 2.0f;
 
     fm_vec3_dir_from_euler(&forward, &player.camera.rotation);
     fm_vec3_dir_from_euler(&right, &eulerright);
@@ -628,48 +628,17 @@ void player_update(){
         }
     }
 
-    // outer collision
-    /*if(player.position.x < T3D_TOUNITS(-5.3f)) player.position.x = T3D_TOUNITS(-5.3f);
-    if(player.position.x > T3D_TOUNITS(5.3f)) player.position.x = T3D_TOUNITS(5.3f);
-    if(player.position.z > T3D_TOUNITS(2.6f)) player.position.z = T3D_TOUNITS(2.6f);
-    if(player.position.z < T3D_TOUNITS(-2.8f)) player.position.z = T3D_TOUNITS(-2.8f);
-
-    // floor 0 collision
-    if(player.floor == 0 && player.position.z > 0 && player.position.x > T3D_TOUNITS(-3.75f)) player.position.x = T3D_TOUNITS(-3.75f);
+    float pltimelast = pltime;
+    pltime += running? DELTA_TIME * 2 : DELTA_TIME * 2;
+    if(wishdirlen > 0.5f)
+        if((int)pltime != (int)pltimelast)
+            if(!currentlevel.floormaterial.empty()){
+                int soundidx = (rand() % 4) + 1;
+                sound_play(("footstep_" + currentlevel.floormaterial + std::to_string(soundidx)).c_str(), false);
+            }
     
-    // inner collision
-    fm_vec3_t innerhit = {0};
-    if(intersectInner(&player.position, T3D_TOUNITS(7.5f), T3D_TOUNITS(2.2f), &innerhit)) {
-        player.position.x = innerhit.x;
-        player.position.z = innerhit.z;
-    }
-
-    // handle stair slopes
-    if(player.position.x > T3D_TOUNITS(-3.0f) && player.position.x < T3D_TOUNITS(3.0f)){
-        float floorheight = 0;
-        float floor = (float)player.floor;
-        // upstairs
-        if(player.position.z > 0){
-            if(player.floor % 2 == 1) floor += 1.0f;
-            float t = (player.position.x + T3D_TOUNITS(3.0f)) / T3D_TOUNITS(6.0f); //fmap(player.position.x, T3D_TOUNITS(3.0f),T3D_TOUNITS(-3.0f),0.0f,1.0f);
-            float highfloor = -((float)floor - 1.0f) * T3D_TOUNITS(4.0f);
-            float lowfloor =  -((float)floor) * T3D_TOUNITS(4.0f);
-            floorheight = lerp(lowfloor, highfloor, t);
-        } else { // downstairs 
-            if(player.floor % 2 == 1) floor -= 1.0f;
-            float t = (player.position.x + T3D_TOUNITS(3.0f)) / T3D_TOUNITS(6.0f);
-            float highfloor = -((float)floor) * T3D_TOUNITS(4.0f);
-            float lowfloor =  -((float)floor + 1.0f) * T3D_TOUNITS(4.0f);
-            floorheight = lerp(highfloor, lowfloor, t);
-        }
-
-        player.position.y = floorheight;
-    } // if not on stairs
-    else{
-        player.floor = floorf(T3D_FROMUNITS(-player.position.y / 4.0f) + 0.9f);
-        player.position.y = -(player.floor) * T3D_TOUNITS(4.0f); 
-    }*/
-
+    if(player.joypad.input.stick_x < 20 && player.joypad.input.stick_x > -20) player.joypad.input.stick_x = 0;
+    if(player.joypad.input.stick_y < 20 && player.joypad.input.stick_y > -20) player.joypad.input.stick_y = 0;
     player.camera.rotation.y   -= T3D_DEG_TO_RAD(1.0f * DELTA_TIME * player.joypad.input.stick_x);
     player.camera.rotation.x   += T3D_DEG_TO_RAD(0.7f * DELTA_TIME * player.joypad.input.stick_y);
     player.camera.rotation.x = fclampr(player.camera.rotation.x, T3D_DEG_TO_RAD(-70), T3D_DEG_TO_RAD(70));
@@ -684,96 +653,16 @@ void player_update(){
 
     if(player.joypad.held.z) player.heightdiff = lerp(player.heightdiff, (player.charheight / 3), 0.2f );
     else player.heightdiff = lerp(player.heightdiff, 0, 0.2f );
+    if(player.joypad.pressed.z) sound_play("player_crouch", false);
     player.camera.position.y -= (player.heightdiff);
-
-    /*
-    if(pressed.a) {
-        if(!player.light.flashlightlocked){
-            player_flswitch();
-            if(player.light.onflashlightpress) 
-                player.light.onflashlightpress();
-        }
-        else wav64_play(&fllockedsound, SFX_CHANNEL_EFFECTS2);
-    }*/
 
     frame++;
 }
 
 void player_draw(T3DViewport *viewport){
-    //int noise = (funstuff.noiselevel / 20) + 2;
-    //viewport->offset[0] = rand() % noise;
     camera_transform(&player.camera, viewport);
-    //t3d_light_set_point(0, (uint8_t*)&player.light.color, (T3DVec3*)&player.light.position, 0.5f, false);
 }
 
 void player_draw_ui(){
-    /*int noise = funstuff.noiselevel / 5 + 1;
-    int whitenoise = funstuff.noiselevel / 5 + 5;
-    int offset = funstuff.noiselevel / 5;
-    T3DObject* obj = t3d_model_get_object_by_index(player.light.flashlightmodel, 0);
-    surface_t surf = sprite_get_pixels(player.light.flashlighttextures[player.light.flashlighttexindex]);
-    T3DModelState state = t3d_model_state_create();
-            state.drawConf = &(T3DModelDrawConf){
-                .userData = NULL,
-                .tileCb = NULL,
-                .filterCb = NULL
-            };
-    t3d_matrix_push(player.light.modelMatFP[frame % 6]);
-    //if(!player.light.modelblock) {
-        //rspq_block_begin();
-        rdpq_sync_pipe(); // Hardware crashes otherwise
-        rdpq_sync_tile();
-        t3d_model_draw_material(obj->material, &state);
-        rdpq_mode_mipmap(MIPMAP_NONE, 0);
-        if(player.light.flashlighttexindex == 1)
-             rdpq_tex_upload(TILE0, &surf, &(rdpq_texparms_t){.s.mirror = true, .t.mirror = true, .s.repeats = 2, .t.repeats = 1, .s.translate = frandr(-10,10), .t.translate = 32});
-        else rdpq_tex_upload(TILE0, &surf, &(rdpq_texparms_t){.s.mirror = true, .t.mirror = true, .s.repeats = 2, .t.repeats = 2});
-        rdpq_mode_combiner(RDPQ_COMBINER2(
-            (TEX0,0,PRIM,0), (TEX0,0,PRIM,0), 
-            (NOISE,0,ENV,COMBINED), (0,0,0,COMBINED)
-            ));
-        rdpq_mode_zbuf(false,false);
-        rdpq_mode_blender(RDPQ_BLENDER((MEMORY_RGB, IN_ALPHA, IN_RGB, ONE)));
-        if(player.light.flashlightenabled && !player.light.flashlightstrobe) rdpq_set_prim_color(RGBA32(funstuff.noiselevel > 100? 75 : 15,15,15, 255));
-        else  rdpq_set_prim_color(RGBA32(0,0,0, 0));
-        rdpq_set_env_color(RGBA32(whitenoise,whitenoise,whitenoise,255));
-        rdpq_mode_dithering(DITHER_NOISE_NOISE);
-        t3d_model_draw_object(obj, NULL);
-        t3d_matrix_pop(1);
-        //player.light.modelblock = rspq_block_end();
-    //} rspq_block_run(player.light.modelblock);
-   rdpq_sync_pipe(); // Hardware crashes otherwise
-    rdpq_set_mode_standard();
-    rdpq_mode_alphacompare(30);
-    rdpq_set_prim_color(RGBA32(70,70,70,255));
-    rdpq_mode_combiner(RDPQ_COMBINER2((NOISE,0,TEX0,0), (TEX0,0,PRIM,0), (COMBINED,0,PRIM,0),(0,0,0,COMBINED)));
-    rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-    rdpq_mode_dithering(DITHER_NOISE_NOISE);
-    int offsetrand = rand() % noise;
-    rdpq_sync_pipe(); // Hardware crashes otherwise
-    rdpq_sync_load();
-    rdpq_sync_tile();
-    if(frame % 64 > 32) rdpq_sprite_blit(ui_play, 30 + offsetrand,20, NULL);
-    rdpq_sync_pipe(); // Hardware crashes otherwise
-    rdpq_sprite_blit(ui_play2, display_get_width() - 90 + offsetrand, display_get_height() - 50 + offset, NULL);
-    rdpq_sync_pipe(); // Hardware crashes otherwise
-    rdpq_sprite_blit(ui_play3, 20 + offsetrand,20, NULL);
-
-;
-    //rdpq_text_printf(NULL, 1, 20, 20, "Indices: %i\nVerts: %i", stairs.stairsmodel->totalVertCount);
-    //rdpq_text_printf(NULL, 1, 20, 20, "floor: %i\n pos: %.2f, %.2f, %.2f", player.floor, T3D_FROMUNITS(player.position.x), T3D_FROMUNITS(player.position.y), T3D_FROMUNITS(player.position.z));
-    if(prevbuffer.buffer && player.look.motionblur > 0){
-        rdpq_set_mode_standard();
-        rdpq_mode_combiner(RDPQ_COMBINER_TEX);
-        rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY_CONST);
-        rdpq_set_fog_color(RGBA32(0, 0, 0, player.look.motionblur * 255.0f));
-        rdpq_mode_zbuf(false,false); 
-        rdpq_tex_blit(&prevbuffer, 0,0, NULL);
-    }
-    prevbuffer = display_get_current_framebuffer();*/
     rdpq_sync_pipe();
-    //rdpq_text_printf(NULL, 1, 20, 20, "Pos: %.2f, %.2f, %.2f", (player.position.x), (player.position.y), (player.position.z));
-    rdpq_text_printf(NULL, 1, 20, 40, "FPS: %.2f", display_get_fps());
-   // heap_stats_t stats; sys_get_heap_stats(&stats);
-    //rdpq_text_printf(NULL, 1, 20, 60, "MEM: %i total, %i used", stats.total, stats.used);
 }
