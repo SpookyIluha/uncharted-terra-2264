@@ -105,12 +105,12 @@ void T3DMWModel::draw() {
                 case 1:
                     t3d_fog_set_enabled(true);
                     t3d_state_set_drawflags(static_cast<T3DDrawFlags>(obj.object->material->renderFlags | T3D_FLAG_SHADED));
-                    rdpq_mode_blender(RDPQ_BLENDER((FOG_RGB, SHADE_ALPHA, IN_RGB, INV_MUX_ALPHA)));
+                    rdpq_mode_blender(RDPQ_BLENDER((IN_RGB, SHADE_ALPHA, FOG_RGB, INV_MUX_ALPHA)));
                     break;
                 case 2:
                     t3d_fog_set_enabled(false);
                     t3d_state_set_drawflags(static_cast<T3DDrawFlags>(obj.object->material->renderFlags | T3D_FLAG_SHADED));
-                    rdpq_mode_blender(RDPQ_BLENDER((FOG_RGB, SHADE_ALPHA, IN_RGB, INV_MUX_ALPHA)));
+                    rdpq_mode_blender(RDPQ_BLENDER((IN_RGB, SHADE_ALPHA, FOG_RGB, INV_MUX_ALPHA)));
                     break;
                 default:
                     t3d_fog_set_enabled(false);

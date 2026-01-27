@@ -4,7 +4,6 @@
 
 #include <vector>
 #include <string>
-#include <map>
 #include <functional>
 #include <libdragon.h>
 #include <t3d/t3d.h>
@@ -16,6 +15,9 @@
 
 #define ENTITY_IS_ENABLED (1<<1)
 #define ENTITY_HAS_EEPROM_DATA (1<<0)
+#define MAX_ENTITY_TYPES 16
+#define MAX_ENTITY_COMMANDS 96
+#define MAX_COMMAND_NAME 32
 
 // Forward declarations
 namespace tortellini {
@@ -24,6 +26,10 @@ namespace tortellini {
 
 // Forward declaration for string_to_vec (defined in level.cpp)
 extern fm_vec3_t string_to_vec(const std::string& input);
+
+struct entity_command_entry { char name[MAX_COMMAND_NAME]; ConsoleCommand func; };
+extern entity_command_entry commands[MAX_ENTITY_COMMANDS];
+extern int commands_count;
 
 // Base abstract entity class
 class Entity {
@@ -44,14 +50,22 @@ public:
 protected:
     std::string name;
     std::string class_type;
-    static std::map<std::string, ConsoleCommand> commands;
+    
 
     // Helper to register a function
     void register_console_command(const std::string& func_name, ConsoleCommand func) {
-        std::string key = name + "_" + func_name;
-        if(commands.count(key) > 0) return;
-        Entity::commands[key] = func;
-        debugf("Registered console command '%s' for entity '%s'\n", (key).c_str(), name.c_str());
+        char key[MAX_COMMAND_NAME];
+        snprintf(key, sizeof(key), "%s_%s", name.c_str(), func_name.c_str());
+        for(int i=0;i<commands_count;i++){
+            if(strcmp(commands[i].name, key) == 0) return;
+        }
+        if(commands_count < MAX_ENTITY_COMMANDS){
+            strncpy(commands[commands_count].name, key, MAX_COMMAND_NAME-1);
+            commands[commands_count].name[MAX_COMMAND_NAME-1] = '\0';
+            commands[commands_count].func = func;
+            commands_count++;
+        }
+        debugf("Registered console command '%s' for entity '%s'\n", (key), name.c_str());
     };
 
     int unique_id;
@@ -87,8 +101,10 @@ typedef Entity* (*EntityFactory)(const std::string& name, int id);
 
 class EntitySystem {
 private:
-    static std::map<std::string, EntityFactory> factories;
-    static std::map<int, Entity*> entities;
+    struct EntityFactoryEntry { char type[SHORTSTR_LENGTH]; EntityFactory factory; };
+    static EntityFactoryEntry factories[MAX_ENTITY_TYPES];
+    static int factory_count;
+    static Entity* entities[MAX_ENTITIES];
 
 public:
     // Register an entity class factory
@@ -118,7 +134,6 @@ public:
     // Save all entities to EEPROM buffer
     static void save_all_to_eeprom();
 };
-
 
 #endif
 

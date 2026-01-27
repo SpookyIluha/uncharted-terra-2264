@@ -19,6 +19,7 @@ private:
     std::string on_inserted_subtitle;
     bool retrievable; // If true, item is kept. If false, item is consumed.
     float range;
+    bool insertframe = false;
 
     T3DMWModel model;
     T3DMWModel inserted_model;

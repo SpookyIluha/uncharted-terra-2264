@@ -15,6 +15,10 @@
 #include "subtitles.h"
 #include "game/entity.h"
 
+extern "C" {
+  void* sbrk_top(int incr);
+}
+
 bool must_save_game_on_next_frame = false;
 bool must_load_game_on_next_frame = false;
 bool must_goto_main_menu = false;
@@ -48,7 +52,23 @@ void playtimelogic(){
   T3DViewport viewport = t3d_viewport_create_buffered(12);
   
   player_init();
-  surface_t zbuffer = surface_alloc(FMT_RGBA16, display_get_width(), display_get_height());
+  surface_t surf_zbuf;
+  /* Try to allocate the Z-Buffer from the top of the heap (near the stack).
+      This basically puts it in the last memory bank, hopefully separating it
+      from framebuffers, which provides a nice speed gain. */
+  int width, height;
+  bool zbuf_sbrk_top = false;
+  width = display_get_width();
+  height = display_get_height();
+  void *buf = sbrk_top(width * height * 2);
+  if (buf != (void*)-1) {
+      data_cache_hit_invalidate(buf, width * height * 2);
+      surf_zbuf = surface_make(UncachedAddr(buf), FMT_RGBA16, width, height, width*2);
+      zbuf_sbrk_top = true;
+  } else {
+      surf_zbuf = surface_alloc(FMT_RGBA16, width, height);
+      zbuf_sbrk_top = false;
+  }
 
   if(!must_load_game_on_next_frame){
     currentlevel.load(gamestatus.startlevelname);
@@ -76,7 +96,7 @@ void playtimelogic(){
     EntitySystem::update_all(); // Update all entities
 
     // ======== Draw ======== //
-    rdpq_attach(display_get(), &zbuffer);
+    rdpq_attach(display_get(), &surf_zbuf);
 
     if(display_interlace_rdp_field() >= 0) 
         rdpq_enable_interlaced(display_interlace_rdp_field());
@@ -98,8 +118,12 @@ void playtimelogic(){
     rdpq_mode_antialias(AA_REDUCED);
     rdpq_mode_zmode(ZMODE_INTERPENETRATING);
     currentlevel.draw();
+    rdpq_sync_pipe();
+    rdpq_sync_tile();
     rdpq_mode_persp(true);
     EntitySystem::draw_all(); // Draw all entities
+    rdpq_sync_pipe();
+    rdpq_sync_tile();
     player_draw_ui();
     subtitles_draw();
     traversal_fade_draw(); // Draw fade from black overlay
@@ -109,6 +133,14 @@ void playtimelogic(){
   }
   rspq_wait();
   t3d_viewport_destroy(&viewport);
-  surface_free(&zbuffer);
   currentlevel.free();
+
+  if ( surf_zbuf.buffer )
+  {
+    surface_free(&surf_zbuf);
+    if (zbuf_sbrk_top) {
+      sbrk_top(-width * height * 2);
+      zbuf_sbrk_top = false;
+    }
+  }
 }

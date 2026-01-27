@@ -302,19 +302,20 @@ void game_menu(){
         float height = display_get_height();
         {
             posoffset = lerp(posoffset, 0, 0.1f);
-                rdpq_sprite_blit(button_a, 15 + selection*150, height - 60 + posoffset, NULL);
+            int posoffseti = (int)posoffset;
+                rdpq_sprite_blit(button_a, 15 + selection*150, height - 60 + posoffseti, NULL);
             if(gamestatus.state_persistent.lastsavetype != SAVE_NONE){
                 parmstext.style_id = gamestatus.fonts.titlefontstyle;
-                rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, height - 40 + posoffset, dictstr("MM_continue"));
+                rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, height - 40 + posoffseti, dictstr("MM_continue"));
             } else
             {
                 parmstext.style_id = 2;
-                rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, height - 40 + posoffset, dictstr("MM_continue"));
+                rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, height - 40 + posoffseti, dictstr("MM_continue"));
             }
             parmstext.style_id = gamestatus.fonts.titlefontstyle;
-            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 200, height - 40 + posoffset, dictstr("MM_newgame"));
-            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 350, height - 40 + posoffset, music_volume_get() > 0? dictstr("MM_music_on") : dictstr("MM_music_off"));
-            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 500, height - 40 + posoffset, sound_volume_get() > 0? dictstr("MM_sounds_on") :dictstr ("MM_sounds_off"));
+            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 200, height - 40 + posoffseti, dictstr("MM_newgame"));
+            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 350, height - 40 + posoffseti, music_volume_get() > 0? dictstr("MM_music_on") : dictstr("MM_music_off"));
+            rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 500, height - 40 + posoffseti, sound_volume_get() > 0? dictstr("MM_sounds_on") :dictstr ("MM_sounds_off"));
             joypad_poll();
 
             //rdpq_text_printf(NULL, 1, 20, 40, "FPS: %.2f", display_get_fps());

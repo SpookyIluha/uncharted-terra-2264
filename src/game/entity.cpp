@@ -8,10 +8,11 @@
 #include <assert.h>
 #include <fstream>
 
-std::map<std::string, ConsoleCommand> Entity::commands;
+entity_command_entry commands[MAX_ENTITY_COMMANDS];
+int commands_count = 0;
 
 void Entity::clear_commands(){
-    Entity::commands.clear();
+    commands_count = 0;
 }
 
 // Entity class implementation
@@ -30,34 +31,48 @@ Entity::Entity(const std::string& entity_name, const std::string& entity_class_t
 }
 
 bool Entity::console_command_invoke(const std::string& func_name, const std::vector<std::string>& args) {
-    auto it = Entity::commands.find(name + "_" + func_name);
-    if (it != Entity::commands.end()) {
-        it->second(args);
-        return true;
+    char key[MAX_COMMAND_NAME];
+    snprintf(key, sizeof(key), "%s_%s", name.c_str(), func_name.c_str());
+    for(int i=0;i<commands_count;i++){
+        if(strcmp(commands[i].name, key) == 0){
+            commands[i].func(args);
+            return true;
+        }
     }
     return false;
 }
 
 // EntitySystem static members
-std::map<std::string, EntityFactory> EntitySystem::factories;
-std::map<int, Entity*> EntitySystem::entities;
+EntitySystem::EntityFactoryEntry EntitySystem::factories[MAX_ENTITY_TYPES];
+int EntitySystem::factory_count = 0;
+Entity* EntitySystem::entities[MAX_ENTITIES] = {0};
 
 void EntitySystem::register_entity_type(const std::string& class_type, EntityFactory factory) {
-    factories[class_type] = factory;
-    debugf("Registered entity type: %s\n", class_type.c_str());
+    if(factory_count < MAX_ENTITY_TYPES){
+        strncpy(factories[factory_count].type, class_type.c_str(), SHORTSTR_LENGTH-1);
+        factories[factory_count].type[SHORTSTR_LENGTH-1] = '\0';
+        factories[factory_count].factory = factory;
+        factory_count++;
+        debugf("Registered entity type: %s\n", class_type.c_str());
+    }
 }
 
 Entity* EntitySystem::create_entity(const std::string& class_type, const std::string& name, int id) {
-    auto it = factories.find(class_type);
-
-    assertf(it != factories.end(), "Unknown entity class type: %s. Did you forget to register it?\n", class_type.c_str());
+    EntityFactory factory = NULL;
+    for(int i=0;i<factory_count;i++){
+        if(strcmp(factories[i].type, class_type.c_str()) == 0){
+            factory = factories[i].factory;
+            break;
+        }
+    }
+    assertf(factory != NULL, "Unknown entity class type: %s. Did you forget to register it?\n", class_type.c_str());
 
     // Use provided ID
     assertf(id >= 0 && id < MAX_ENTITIES, "Entity ID must be valid: %d >= 0 && %d < %d", id, id, MAX_ENTITIES);
     
-    Entity* entity = it->second(name, id);
+    Entity* entity = factory(name, id);
     if (entity) {
-        entities[id] = entity;
+        EntitySystem::entities[id] = entity;
         debugf("Created entity: %s (type: %s, id: %d)\n", name.c_str(), class_type.c_str(), id);
     }
     
@@ -142,46 +157,49 @@ void EntitySystem::load_entities_from_ini(const std::string& levelname) {
 }
 
 Entity* EntitySystem::get_entity(int id) {
-    auto it = entities.find(id);
-    if (it != entities.end()) {
-        return it->second;
-    }
-    return nullptr;
+    if(id < 0 || id >= MAX_ENTITIES) return nullptr;
+    return entities[id];
 }
 
 Entity* EntitySystem::get_entity_by_name(const std::string& name) {
-    for (auto& pair : entities) {
-        if (pair.second->get_name() == name) {
-            return pair.second;
+    for (int i=0;i<MAX_ENTITIES;i++) {
+        if (entities[i] && entities[i]->get_name() == name) {
+            return entities[i];
         }
     }
     return nullptr;
 }
 
 void EntitySystem::update_all() {
-    for (auto& pair : entities) {
-        pair.second->update();
+    for (int i=0;i<MAX_ENTITIES;i++) {
+        if(entities[i]) entities[i]->update();
     }
 }
 
 void EntitySystem::draw_all() {
-    for (auto& pair : entities) {
-        t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
-        pair.second->draw();
+    for (int i=0;i<MAX_ENTITIES;i++) {
+        if(entities[i]){
+            t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
+            entities[i]->draw();
+        }
     }
 }
 
 void EntitySystem::clear_all() {
-    for (auto& pair : entities) {
-        delete pair.second;
+    for (int i=0;i<MAX_ENTITIES;i++) {
+        if(entities[i]){
+            delete entities[i];
+            entities[i] = NULL;
+        }
     }
-    entities.clear();
 }
 
 void EntitySystem::save_all_to_eeprom() {
-    for (auto& pair : entities) {
-        Entity* entity = pair.second;
-        gamestatus.state.game.entities[entity->get_id()].flags = entity->save_to_eeprom() | (entity->enabled? ENTITY_IS_ENABLED : 0) | ENTITY_HAS_EEPROM_DATA;
+    for (int i=0;i<MAX_ENTITIES;i++) {
+        Entity* entity = entities[i];
+        if(entity){
+            gamestatus.state.game.entities[entity->get_id()].flags = entity->save_to_eeprom() | (entity->enabled? ENTITY_IS_ENABLED : 0) | ENTITY_HAS_EEPROM_DATA;
+        }
     }
     player_save_to_eeprom();
 }

@@ -20,12 +20,14 @@
      range = section["range"] | 2.5f;
  }
  
- void InteractiveChoice::load_from_eeprom(uint16_t data){
- }
- 
- uint16_t InteractiveChoice::save_to_eeprom() const{
-     return 0;
- }
+void InteractiveChoice::load_from_eeprom(uint16_t data){
+    used = (data & INTERACTIVE_CHOICE_USED_BIT) != 0;
+}
+
+uint16_t InteractiveChoice::save_to_eeprom() const{
+    return used ? INTERACTIVE_CHOICE_USED_BIT : 0;
+}
+
  
  void InteractiveChoice::init(){
  }
@@ -33,8 +35,8 @@
  void InteractiveChoice::update(){
      if(!enabled) return;
      float dist = fm_vec3_distance(&transform.position, &player.position);
-     if(dist < range){
-         subtitles_add(dictstr("keypad_use"), 1.0f, 'A');
+     if(dist < range && !used){
+         subtitles_add(dictstr("interact"), 1.0f, 'A');
          if(player.joypad.pressed.a){
              sound_play("select", false);
              open_menu();
@@ -90,18 +92,22 @@
  
          rdpq_textparms_t titleparms; titleparms.align = ALIGN_CENTER; titleparms.width = display_get_width(); titleparms.style_id = gamestatus.fonts.titlefontstyle;
          rdpq_textparms_t textparms; textparms.align = ALIGN_CENTER; textparms.width = display_get_width(); textparms.style_id = gamestatus.fonts.subtitlefontstyle;
-         rdpq_text_printf(&titleparms, gamestatus.fonts.titlefont, display_get_width()/2, 80, title.c_str());
+         rdpq_text_printf(&titleparms, gamestatus.fonts.titlefont, 0, 160, dictstr(title.c_str()));
  
-         int y1 = 160;
-         int y2 = 200;
-         rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, display_get_width()/2, y1, choice1_text.c_str());
-         rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, display_get_width()/2, y2, choice2_text.c_str());
+         int y1 = 240;
+         int y2 = 280;
+         rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 0, y1 + 16, dictstr(choice1_text.c_str()));
+         rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 0, y2 + 16, dictstr(choice2_text.c_str()));
  
          rdpq_set_mode_standard();
          rdpq_set_prim_color(RGBA32(255,255,255,255));
          rdpq_mode_combiner(RDPQ_COMBINER1((0,0,0,PRIM),(0,0,0,TEX0)));
+         rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
          int selector_y = selected == 0 ? y1 : y2;
-         rdpq_sprite_blit(selector, display_get_width()/2 - selector->width/2, selector_y, NULL);
+         rdpq_blitparms_t blitparms;
+         blitparms.cx = selector->width/2;
+         blitparms.scale_x = 4;
+         rdpq_sprite_blit(selector, display_get_width()/2, selector_y, &blitparms);
  
          rdpq_mode_combiner(RDPQ_COMBINER_TEX);
          rdpq_mode_alphacompare(10);
@@ -111,9 +117,9 @@
          }
          rdpq_set_mode_standard();
          rdpq_textparms_t t2; t2.align = ALIGN_LEFT; t2.width = display_get_width(); t2.style_id = gamestatus.fonts.subtitlefontstyle;
-         rdpq_text_printf(&t2, gamestatus.fonts.subtitlefont, 640 - 120, 50, dictstr("PAUSE_select"));
+         rdpq_text_printf(&t2, gamestatus.fonts.subtitlefont, 640 - 120, 50, dictstr("choice_select"));
          if(!forced_choice){
-             rdpq_text_printf(&t2, gamestatus.fonts.subtitlefont, 640 - 320, 50, dictstr("keypad_back"));
+             rdpq_text_printf(&t2, gamestatus.fonts.subtitlefont, 640 - 320, 50, dictstr("choice_back"));
          }
  
          rdpq_detach_show();
@@ -130,6 +136,7 @@
              }
              sound_play("select2", false);
              running = false;
+             used = true;
          }
          if(btn.b && !forced_choice){
              sound_play("select", false);

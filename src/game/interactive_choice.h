@@ -4,7 +4,8 @@
  #include "entity.h"
  
  #define INTERACTIVE_CHOICE_TYPE_NAME "InteractiveChoice"
- 
+ #define INTERACTIVE_CHOICE_USED_BIT (1<<3)
+
  class InteractiveChoice : public Entity {
  private:
      std::string title;
@@ -14,6 +15,7 @@
      std::string choice2_command;
      bool forced_choice;
      float range;
+     bool used;
  public:
      InteractiveChoice(const std::string& name, int id);
      virtual ~InteractiveChoice() = default;

@@ -43,6 +43,7 @@ InteractiveModel::InteractiveModel(const std::string& name, int id)
             }
         }
         iteminserted = true;
+        insertframe = true;
     });
 }
 
@@ -92,7 +93,7 @@ void InteractiveModel::update() {
         subtitles_add(dictstr("somethingcanbeputhere"), 1.0f, '\0');
         player_potential_user = this;
     }
-    if(dist < range && iteminserted && retrievable){
+    else if(dist < range && iteminserted && retrievable && !insertframe){
         subtitles_add(dictstr("pickup"), 1.0f, 'A');
         if(player.joypad.pressed.a){
             iteminserted = false;
@@ -108,6 +109,7 @@ void InteractiveModel::update() {
             }
         }
     }
+    insertframe = false;
 }
 
 void InteractiveModel::draw() {

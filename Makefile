@@ -37,7 +37,9 @@ ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(TEXT_LIST))
 ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(MOVIES_LIST))
 
 N64_CFLAGS += -std=gnu2x
-N64_C_AND_CXX_FLAGS += -I $(SOURCE_DIR) -I $(SOURCE_DIR)/$(GAME_SOURCE_DIR) -Oz -DNDEBUG -ffunction-sections -fdata-sections -Wl,--gc-sections -Wno-error=write-strings -Wno-error=narrowing -Wno-narrowing -Wno-write-strings -ftrivial-auto-var-init=zero
+N64_C_AND_CXX_FLAGS += -I $(SOURCE_DIR) -I $(SOURCE_DIR)/$(GAME_SOURCE_DIR) -Oz -DNDEBUG -ffunction-sections -fdata-sections -Wno-error=write-strings -Wno-error=narrowing -Wno-narrowing -Wno-write-strings -ftrivial-auto-var-init=zero -flto
+N64_CXXFLAGS += -fno-rtti -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-threadsafe-statics -flto
+N64_LDFLAGS += --gc-sections -flto
 
 all: $(NAME).z64
 

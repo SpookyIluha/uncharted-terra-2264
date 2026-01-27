@@ -651,6 +651,8 @@ void player_update(){
     player.camera.position.y += sinf(CURRENT_TIME * 12.0f) * velocitylen * T3D_FROMUNITS(0.5f);
     player.camera.rotation.x += cosf(CURRENT_TIME * 6.0f) * velocitylen * 0.0008f;
 
+    player.camera.rotation.x += cosf(CURRENT_TIME * 2.0f) * 0.0005f;
+
     if(player.joypad.held.z) player.heightdiff = lerp(player.heightdiff, (player.charheight / 3), 0.2f );
     else player.heightdiff = lerp(player.heightdiff, 0, 0.2f );
     if(player.joypad.pressed.z) sound_play("player_crouch", false);
@@ -664,5 +666,5 @@ void player_draw(T3DViewport *viewport){
 }
 
 void player_draw_ui(){
-    rdpq_sync_pipe();
+
 }

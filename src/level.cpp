@@ -182,7 +182,15 @@ void Level::load(char* levelname){
             bgfillcolor = color_from_packed32(color1);
             bgfillcolor = color_from_packed16(color_to_packed16(bgfillcolor)); // to have the same value as fogcolor
             debugf("Level %s: background fill color set to %08lX\n", levelname, color1);
-        } else if (bgtype_str == "skybox") {
+        }
+        else if (bgtype_str == "fillstandard") {
+            bgtype = FILL_STANDARD;
+            uint32_t color1 = ini["General"]["bgfillcolor"] | 0xFF00FFFF;
+            bgfillcolor = color_from_packed32(color1);
+            bgfillcolor = color_from_packed16(color_to_packed16(bgfillcolor)); // to have the same value as fogcolor
+            debugf("Level %s: background fill (standard) color set to %08lX\n", levelname, color1);
+        }
+        else if (bgtype_str == "skybox") {
             bgtype = SKYBOX;
             std::string skyboxname = ini["General"]["skyboxmodel"] | "";
             debugf("Level %s: background type set to skybox with model %s\n", levelname, skyboxname.c_str());
@@ -308,8 +316,15 @@ void Level::draw(){
     bgfillcolorexposed.g = (uint8_t)fclampr((float)bgfillcolor.g * exposure, 0.0f, 255.0f);
     bgfillcolorexposed.b = (uint8_t)fclampr((float)bgfillcolor.b * exposure, 0.0f, 255.0f);
 
-
+    rdpq_sync_pipe();
+    rdpq_sync_tile();
     switch(bgtype){
+        case FILL_STANDARD:
+            rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+            temporal_dither(FRAME_NUMBER);
+            rdpq_set_prim_color(bgfillcolorexposed);
+            rdpq_fill_rectangle(0,0, display_get_width(), display_get_height());
+            break;
         case FILL:
             rdpq_clear(bgfillcolorexposed);
             break;
@@ -319,10 +334,14 @@ void Level::draw(){
         default:
             break;
     }
+    rdpq_sync_pipe();
+    rdpq_sync_tile();
     t3d_fog_set_enabled(fogenabled);
-    t3d_fog_set_range(T3D_TOUNITS(fogfardistance), T3D_TOUNITS(fogneardistance));
+    t3d_fog_set_range(T3D_TOUNITS(fogneardistance), T3D_TOUNITS(fogfardistance));
     rdpq_set_fog_color(fogcolorexposed);
     levelmodel.draw();
+    rdpq_sync_pipe();
+    rdpq_sync_tile();
     if(hdr.bloomenabled && bloomsprite) {
         bloom_draw(&fb, bloomsprite);
     }

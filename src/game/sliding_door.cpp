@@ -11,14 +11,21 @@ SlidingDoor::SlidingDoor(const std::string& name, int id)
     register_console_command("open", [this](const std::vector<std::string>& args) {
         if (state == CLOSED || state == CLOSING) {
             state = OPENING;
-            // debugf("SlidingDoor '%s': Opening\n", get_name().c_str());
         }
     });
 
     register_console_command("close", [this](const std::vector<std::string>& args) {
         if (state == OPEN || state == OPENING) {
             state = CLOSING;
-            // debugf("SlidingDoor '%s': Closing\n", get_name().c_str());
+        }
+    });
+
+    register_console_command("toggle", [this](const std::vector<std::string>& args) {
+        if (state == OPEN || state == OPENING) {
+            state = CLOSING;
+        }
+        else if (state == CLOSED || state == CLOSING) {
+            state = OPENING;
         }
     });
 }
@@ -39,17 +46,15 @@ void SlidingDoor::load_from_ini(const tortellini::ini::section& section) {
         model.load(filesystem_getfn(DIR_MODEL, model_path.c_str()).c_str());
     }
 
+    state = (section["open"] | false)? OPEN : CLOSED;
+    if(state == OPEN)
+        current_progress = 1.0f;
+
     debugf("SlidingDoor '%s': loaded with model '%s', move_distance %.2f, speed %.2f\n",
            get_name().c_str(), model_path.c_str(), move_distance, speed);
 }
 
 void SlidingDoor::load_from_eeprom(uint16_t data) {
-    // Bit 0: 0 = Closed/Closing, 1 = Open/Opening
-    // This is a simplification, maybe store actual state if needed
-    // For now, let's assume if it was open, it stays open?
-    // Or just ignore persistence for door state if not required.
-    // The user didn't specify persistence behavior, but generally doors might need it.
-    // Let's use 1 bit for open/closed target.
     bool is_open = (data & SLIDING_DOOR_OPENED_BIT);
     if (is_open) {
         state = OPEN;
@@ -97,18 +102,18 @@ void SlidingDoor::update() {
     if(collision_associated_id != -1)
         currentlevel.aabb_collisions[collision_associated_id].enabled = (state == OPENING || state == OPEN)? false : true;
 
-    if (state == OPENING || state == CLOSING) {
-        fm_vec3_t offset;
-        fm_vec3_scale(&offset, &direction, move_distance * current_progress);
-        fm_vec3_add(&transform.position, &initial_position, &offset);
-    }
 }
 
 void SlidingDoor::draw() {
     if (enabled && !model_path.empty()) {
         T3DMat4FP* transform_fp = model.get_transform_fp();
         fm_vec3_t position; 
-        fm_vec3_scale(&position, &transform.position, T3D_TOUNITSCALE);
+        {
+            fm_vec3_t offset;
+            fm_vec3_scale(&offset, &direction, move_distance * current_progress);
+            fm_vec3_add(&position, &transform.position, &offset);
+        }
+        fm_vec3_scale(&position, &position, T3D_TOUNITSCALE);
         t3d_mat4fp_from_srt(transform_fp, (float*)&transform.scale, (float*)&transform.rotation, (float*)&position);
         model.draw();
     }

@@ -46,7 +46,8 @@ class Level {
         enum eBGType{
             NONE = 0,
             FILL = 1,
-            SKYBOX = 2
+            SKYBOX = 2,
+            FILL_STANDARD = 3
         };
 
         eBGType bgtype;

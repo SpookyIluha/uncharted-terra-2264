@@ -25,3 +25,5 @@ filesystem/sfx/ambience/ambience4.wav64:  AUDIOCONV_FLAGS += --wav-resample 1105
 filesystem/sfx/ambience/ambience5.wav64:  AUDIOCONV_FLAGS += --wav-resample 11050
 filesystem/sfx/ambience/ambience6.wav64:  AUDIOCONV_FLAGS += --wav-resample 11050
 filesystem/sfx/ambience/ambience_intro.wav64:  AUDIOCONV_FLAGS += --wav-resample 7000 --wav-compress 1,bits=2
+
+filesystem/sfx/intro/movie1.wav64:  AUDIOCONV_FLAGS += --wav-resample 28000
