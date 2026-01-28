@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <display.h>
 #include "utils.h"
+#include "engine_gamestatus.h"
 #include <fmath.h>
 
 color_t get_rainbow_color(float s) {
@@ -61,6 +62,24 @@ void rdpq_tex_blit_anchor(const surface_t* surface, rdpq_align_t horizontal, rdp
         default: break;
     }
     rdpq_tex_blit(surface, x,y,parms);
+}
+
+void engine_display_init_default(){
+    resolution_t res;
+    res.width = 640;
+    res.height = is_memory_expanded()? 480 : 360;
+    res.interlaced = gamestatus.fastgraphics? INTERLACE_RDP : INTERLACE_HALF;
+    res.aspect_ratio = (float)res.width / (float)res.height;
+    display_init(res,
+        DEPTH_16_BPP,
+        NUM_BUFFERS, GAMMA_NONE,
+        FILTERS_RESAMPLE_ANTIALIAS_DEDITHER
+    );
+    if(get_tv_type() == TV_PAL && gamestatus.fastgraphics) {
+        int offset = is_memory_expanded()? 0 : 60;
+        vi_set_borders((vi_borders_t){.up = 48 + offset, .down = 48 + offset});
+        vi_set_yscale_factor(2.0f);
+    }
 }
 
 

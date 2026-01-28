@@ -5,6 +5,7 @@ reference/
 boxart/
 movies/
 screenshots/
+boxart/
 *.z64
 .vscode/
 *.eeprom

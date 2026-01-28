@@ -10,6 +10,7 @@
 #include "effects.h"
 #include "playtimelogic.h"
 #include "mainmenu.h"
+#include "intro.h"
 
 bool cont = false;
 
@@ -21,34 +22,7 @@ T3DViewport viewport;
 void new_game();
 
 void game_start(){
-    resolution_t res;
-    if(gamestatus.fastgraphics){
-        res.width = 640;
-        res.height = is_memory_expanded()? 480 : 360;
-        res.interlaced = INTERLACE_RDP;
-        res.aspect_ratio = (float)res.width / (float)res.height;
-        display_init(res,
-            DEPTH_16_BPP,
-            NUM_BUFFERS, GAMMA_NONE,
-            FILTERS_RESAMPLE_ANTIALIAS_DEDITHER
-        );
-    }
-    else{
-        res.width = 640;
-        res.height = is_memory_expanded()? 480 : 360;
-        res.interlaced = INTERLACE_HALF;
-        res.aspect_ratio = (float)res.width / (float)res.height;
-        display_init(res,
-            DEPTH_16_BPP,
-            NUM_BUFFERS, GAMMA_NONE,
-            FILTERS_RESAMPLE_ANTIALIAS_DEDITHER
-        );
-    }
-    if(get_tv_type() == TV_PAL && gamestatus.fastgraphics) {
-        int offset = is_memory_expanded()? 0 : 60;
-        vi_set_borders((vi_borders_t){.up = 48 + offset, .down = 48 + offset});
-        vi_set_yscale_factor(2.0f);
-    }
+    engine_display_init_default();
 
     while(true){
         game_menu();
@@ -131,7 +105,18 @@ void new_game(){
     rspq_wait();
     sprite_free(bg);
     sound_stop();
-    
+    display_close();
+    {
+        std::string moviefn = filesystem_getfn(DIR_MOVIES, "newgame");
+        movie_play(const_cast<char*>(moviefn.c_str()), "newgame", 15);
+    }
+    sound_stop();
+    bgm_stop(0);
+    audioutils_mixer_update();
+    rspq_wait();
+    wait_ms(2000);
+    engine_display_init_default();
+    rspq_wait();
     memset(&gamestatus.state.game, 0, sizeof(gamestatus.state.game));
     playtimelogic();
 }
@@ -254,7 +239,7 @@ void game_menu(){
         rdpq_sprite_blit(bg, display_get_width() / 2, display_get_height() / 4, &blitparms);
         
         rdpq_textparms_t parms; parms.align = ALIGN_CENTER; parms.width = display_get_width(); parms.style_id = gamestatus.fonts.titlefontstyle;
-        rdpq_text_printf(&parms, gamestatus.fonts.titlefont, 0, display_get_height() - 45, "Press Start");
+        rdpq_text_printf(&parms, gamestatus.fonts.titlefont, 0, display_get_height() - 45, dictstr("press_start"));
         rdpq_sync_tile();
         rdpq_detach_show();
     }
@@ -309,7 +294,7 @@ void game_menu(){
                 rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, height - 40 + posoffseti, dictstr("MM_continue"));
             } else
             {
-                parmstext.style_id = 2;
+                parmstext.style_id = gamestatus.fonts.unavailablefontstyle;
                 rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 50, height - 40 + posoffseti, dictstr("MM_continue"));
             }
             parmstext.style_id = gamestatus.fonts.titlefontstyle;
@@ -318,9 +303,11 @@ void game_menu(){
             rdpq_text_printf(&parmstext, gamestatus.fonts.titlefont, 500, height - 40 + posoffseti, sound_volume_get() > 0? dictstr("MM_sounds_on") :dictstr ("MM_sounds_off"));
             joypad_poll();
 
-            //rdpq_text_printf(NULL, 1, 20, 40, "FPS: %.2f", display_get_fps());
-            //heap_stats_t stats; sys_get_heap_stats(&stats);
-            //rdpq_text_printf(NULL, 1, 20, 60, "MEM: %i total, %i used", stats.total, stats.used);
+            if(gamestatus.state.scripts.debug){
+                rdpq_text_printf(NULL, 1, 20, 40, "FPS: %.2f", display_get_fps());
+                heap_stats_t stats; sys_get_heap_stats(&stats);
+                rdpq_text_printf(NULL, 1, 20, 60, "MEM: %i total, %i used", stats.total, stats.used);
+            }
 
             joypad_buttons_t btn  = joypad_get_buttons_pressed(JOYPAD_PORT_1);
             btn.raw |= joypad_get_buttons_pressed(JOYPAD_PORT_2).raw;
@@ -356,7 +343,7 @@ void game_menu(){
     }
 
     rspq_wait();
-    //t3d_viewport_destroy(&viewport);
+    t3d_viewport_destroy(&viewport);
     sprite_free(bg);
     sprite_free(button_a);
     model.free();

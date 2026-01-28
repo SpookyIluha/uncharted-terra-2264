@@ -95,6 +95,7 @@ $(BUILD_DIR)/$(NAME).elf: $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o) $(SRCS:$(SO
 $(NAME).z64: N64_ROM_TITLE=$(ROM_NAME)
 $(NAME).z64: $(BUILD_DIR)/$(NAME).dfs
 $(NAME).z64: N64_ROM_SAVETYPE = eeprom16k
+$(NAME).z64: N64_ROM_METADATA=metadata/metadata.ini
 
 rebuild:
 	rm -rf $(BUILD_DIR)

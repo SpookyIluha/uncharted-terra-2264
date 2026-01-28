@@ -1,6 +1,7 @@
 #include <libdragon.h>
 #include "utils.h"
 #include "intro.h"
+#include "audioutils.h"
 
 float frandr2( float min, float max )
 {
@@ -181,10 +182,8 @@ void libdragon_logo()
 // which means we can use the real frequency of the audio track.
 #define AUDIO_HZ 32000.0f
 
-void movie_play(char* moviefilename, char* audiofilename, float movie_fps)
+void movie_play(const char* moviefilename, const char* audiofilename, float movie_fps)
 {
-	joypad_init();
-
 	yuv_init();
 
 	// Check if the movie is present in the filesystem, so that we can provide
@@ -253,18 +252,10 @@ void movie_play(char* moviefilename, char* audiofilename, float movie_fps)
 
 	display_set_fps_limit(fps);
 
-
-	// Open the audio track and start playing it in channel 0.
-	wav64_t audio_track;
-    if(audiofilename){
-        FILE *f = fopen(audiofilename, "rb");
-        assertf(f, "Audio not found, but requested %s!", audiofilename);
-        fclose(f);
-
-        wav64_open(&audio_track, audiofilename);
-        wav64_play(&audio_track, 0);
-    }
-
+	// Start audio via audioutils (using prewarmed SFX by basename)
+	if(audiofilename){
+		sound_play(audiofilename, false);
+	}
 
 	int nframes = 0;
 
@@ -276,11 +267,7 @@ void movie_play(char* moviefilename, char* audiofilename, float movie_fps)
 		{
 			break;
 		}
-
-		// This polls the mixer to try and play the next chunk of audio, if available.
-		// We call this function twice during the frame to make sure the audio never stalls.
-		mixer_try_play();
-
+		audioutils_mixer_update();
 		rdpq_attach(display_get(), NULL);
 
 		// Get the next video frame and feed it into our previously set up blitter.
@@ -291,19 +278,18 @@ void movie_play(char* moviefilename, char* audiofilename, float movie_fps)
 		rdpq_detach_show();
 
 		nframes++;
-
-		mixer_try_play();
+        audioutils_mixer_update();
 	}
+
+    mixer_unthrottle();
 
     rspq_wait();
 
     mpeg2_close(video_track);
     yuv_blitter_free(&yuv);
-    if(audiofilename){
-        mixer_ch_stop(0);
-        mixer_ch_stop(1);
-        wav64_close(&audio_track);
-    }
+	if(audiofilename){
+		sound_stop();
+	}
     display_close();
     yuv_close();
 }

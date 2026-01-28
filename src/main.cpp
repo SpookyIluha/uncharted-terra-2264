@@ -10,6 +10,7 @@
 #include "subtitles.h"
 #include "audioutils.h"
 #include "game/entity_register.h"
+#include "playtimelogic.h"
 
 void systems_init(){
     //debug_init_isviewer();
@@ -43,13 +44,14 @@ void systems_init(){
     subtitles_init();
     audio_prewarm_all();
     audio_console_commands_init();
+    playtimelogic_console_commands_init();
 }
 
 int main(void)
 {
     systems_init();
     libdragon_logo();
-    movie_play("rom:/movies/intrologo.m1v", "rom:/sfx/intro/stinger.wav64", 15);
+    movie_play("rom:/movies/intrologo.m1v", "stinger", 15);
     game_logo();
     game_start();
 }

@@ -128,6 +128,7 @@ typedef struct gamestatus_s{
         int titlefontstyle;
         int subtitlefont;
         int subtitlefontstyle;
+        int unavailablefontstyle;
 
         struct{
             rdpq_font_t* font;

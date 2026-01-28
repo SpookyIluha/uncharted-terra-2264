@@ -58,6 +58,7 @@ void engine_config_load(){
     gamestatus.fonts.titlefontstyle =  ini["Fonts"]["titlefontstyle"]   | 0;
     gamestatus.fonts.subtitlefont      =  ini["Fonts"]["subtitlefont"]        | 1;
     gamestatus.fonts.subtitlefontstyle =  ini["Fonts"]["subtitlefontstyle"]   | 0;
+    gamestatus.fonts.unavailablefontstyle = ini["Fonts"]["unavailablefontstyle"] | 0;
 
     if(gamestatus.fonts.fontcount){
         for(int i = 1; i <= gamestatus.fonts.fontcount; i++){
@@ -232,10 +233,10 @@ std::string filesystem_getfn(assetdir_t dir, const char* name){
             sdfn += std::string("/") + gamestatus.data.scriptsfolder + "/" + name;
             break;
         case DIR_SCRIPT_LANG:
-            romfn += std::string("/") + gamestatus.data.scriptsfolder + "/" + gamestatus.state_persistent.curlang + "/" + name;
-            sdfn += std::string("/") + gamestatus.data.scriptsfolder + "/" + gamestatus.state_persistent.curlang + "/" + name;
-            romfn_en += std::string("/") + gamestatus.data.scriptsfolder + "/" + "en" + "/" ;
-            sdfn_en += std::string("/") + gamestatus.data.scriptsfolder + "/" + "en" + "/" ;
+            romfn += std::string("/") + gamestatus.data.scriptsfolder + "/locale/" + gamestatus.state_persistent.curlang + "/" + name;
+            sdfn += std::string("/") + gamestatus.data.scriptsfolder + "/locale/" + gamestatus.state_persistent.curlang + "/" + name;
+            romfn_en += std::string("/") + gamestatus.data.scriptsfolder + "/locale/" + "en" + "/" ;
+            sdfn_en += std::string("/") + gamestatus.data.scriptsfolder + "/locale/" + "en" + "/" ;
             break;
         case DIR_IMAGE:
             romfn += std::string("/") + gamestatus.data.imagesfolder + "/" + name + ".sprite";

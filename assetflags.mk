@@ -2,14 +2,8 @@
 
 filesystem/fonts/neuropolitical.font64: 				MKFONT_FLAGS+= --size 14  --range 20-7F --range 80-FF --range 100-17F
 filesystem/fonts/recharge.font64: 						MKFONT_FLAGS+= --size 14  --range 20-7F --range 80-FF --range 100-17F
-filesystem/fonts/LuckiestGuy-Regular.font64: 			MKFONT_FLAGS+= --size 26  
-filesystem/fonts/RobotoCondensed-Bold.font64: 			MKFONT_FLAGS+= --size 24  
-filesystem/fonts/UbuntuMono-Bold.font64: 				MKFONT_FLAGS+= --size 14  
 
-
-filesystem/fonts/ru/ru_Montserrat_black.font64: 		MKFONT_FLAGS+= --size 16   --range 20-7F --range 0400-052F
-filesystem/fonts/ru/ru_Montserrat_italic.font64: 		MKFONT_FLAGS+= --size 38   --range 20-7F --range 0400-052F
-filesystem/fonts/ru/ru_Montserrat_italic_small.font64: 	MKFONT_FLAGS+= --size 16   --range 20-7F --range 0400-052F
+filesystem/fonts/ru/science-gothic.font64: 		MKFONT_FLAGS+= --size 14   --range 20-7F --range 0400-052F
 
 filesystem/fonts/jp/NikkyouSans-mLKax_small.font64: 	MKFONT_FLAGS+= --size 18   --charset "assets/locale/japanese.ini"
 filesystem/fonts/jp/NikkyouSans-mLKax.font64: 			MKFONT_FLAGS+= --size 38   --charset "assets/locale/japanese.ini"

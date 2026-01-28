@@ -49,6 +49,8 @@ void SlidingDoor::load_from_ini(const tortellini::ini::section& section) {
     state = (section["open"] | false)? OPEN : CLOSED;
     if(state == OPEN)
         current_progress = 1.0f;
+    if(state == CLOSED)
+        current_progress = 0.0f;
 
     debugf("SlidingDoor '%s': loaded with model '%s', move_distance %.2f, speed %.2f\n",
            get_name().c_str(), model_path.c_str(), move_distance, speed);
@@ -73,13 +75,6 @@ uint16_t SlidingDoor::save_to_eeprom() const {
 
 void SlidingDoor::init() {
     initial_position = transform.position;
-    
-    // Update position based on current progress (if loaded from eeprom)
-    if (current_progress > 0.0f) {
-        fm_vec3_t offset;
-        fm_vec3_scale(&offset, &direction, move_distance * current_progress);
-        fm_vec3_add(&transform.position, &initial_position, &offset);
-    }
 }
 
 void SlidingDoor::update() {

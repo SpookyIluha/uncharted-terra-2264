@@ -29,8 +29,9 @@ uint16_t InteractiveChoice::save_to_eeprom() const{
 }
 
  
- void InteractiveChoice::init(){
- }
+void InteractiveChoice::init(){
+    used = false;
+}
  
  void InteractiveChoice::update(){
      if(!enabled) return;

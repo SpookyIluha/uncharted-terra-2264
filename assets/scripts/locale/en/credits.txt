@@ -1,0 +1,36 @@
+Game made with Libdragon and Tiny3D
+
+
+
+Made for the N64Brew gamejam #6
+
+
+
+
+
+
+
+Made by
+SpookyIluha
+
+
+CC0 assets used from:
+www.freesound.org
+www.modarchive.org
+www.polyhaven.com
+www.opengameart.org
+www.1001freefonts.com
+
+
+Music:
+A Different Existenz by MAZ
+Deadly Windmills by JAM
+Poetry
+Street Light Sounds by JAM
+Yielding, Part I by Thomas E. Petersen
+
+
+
+
+
+Thank you for playing and beating the game!

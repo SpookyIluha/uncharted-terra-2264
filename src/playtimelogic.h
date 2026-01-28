@@ -11,6 +11,7 @@ extern void playtimelogic();
 extern void playtimelogic_savegame();
 extern void playtimelogic_loadgame();
 extern void playtimelogic_gotomainmenu();
+extern void playtimelogic_console_commands_init();
 
 #ifdef __cplusplus
 }

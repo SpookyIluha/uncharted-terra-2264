@@ -49,6 +49,9 @@ void rdpq_sprite_blit_anchor(sprite_t* sprite, rdpq_align_t horizontal, rdpq_val
 /// @param parms 
 void rdpq_tex_blit_anchor(const surface_t* surface, rdpq_align_t horizontal, rdpq_valign_t vertical, float x, float y, rdpq_blitparms_t* parms);
 
+/// @brief Initialize the game's default display configuration
+void engine_display_init_default();
+
 /// @brief Returns whether a point is within the screen
 /// @param x 
 /// @param y 

@@ -293,7 +293,6 @@ void sound_play(const char* name, bool loop){
 void sound_stop(){
     for(int i = 0; i < SOUND_SLOT_COUNT; i++){
         sound_slot_t* s = &sound_slots[i];
-        if(!s->in_use) continue;
         mixer_ch_stop(s->channel);
         s->in_use = false;
         s->looping = false;

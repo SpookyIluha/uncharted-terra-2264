@@ -7,7 +7,7 @@ extern "C"{
 
 /// Libragon intro entrypoint
 extern void libdragon_logo();
-extern void movie_play(char* moviefilename, char* audiofilename, float movie_fps);
+extern void movie_play(const char* moviefilename, const char* audiofilename, float movie_fps);
 extern void game_logo();
 #ifdef __cplusplus
 }
