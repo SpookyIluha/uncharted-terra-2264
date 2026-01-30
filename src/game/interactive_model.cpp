@@ -2,6 +2,7 @@
 #include "player.h"
 #include "subtitles.h"
 #include "item_instance.h" // for itemsdict
+#include "effects.h"
 #include "engine_command.h"
 
 extern Entity* player_potential_user; // Defined in player.cpp
@@ -97,6 +98,7 @@ void InteractiveModel::update() {
         subtitles_add(dictstr("pickup"), 1.0f, 'A');
         if(player.joypad.pressed.a){
             iteminserted = false;
+            effects_add_rumble(player.joypad.port, 0.1f);
             player_inventory_additem(itemsdict[required_item]["item_id"] | -1, 1);
             std::string pickupmessage = (itemsdict[required_item]["pickupmessage"] | "");
             if(!pickupmessage.empty()){

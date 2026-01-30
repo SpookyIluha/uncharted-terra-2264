@@ -17,6 +17,8 @@
 #include "engine_command.h"
 #include "intro.h"
 
+bool gamecomplete = false;
+
 extern "C" {
   void* sbrk_top(int incr);
 }
@@ -62,10 +64,16 @@ void loadgame(){
 }
 
 void playtimelogic(){
+  
+  rspq_wait();
+  rdpq_attach(display_get(), NULL); // deadlock otherwise
+  rdpq_detach_show();
+  rspq_wait();
+
   must_goto_main_menu = false;
   must_play_ending = 0;
-  T3DViewport viewport = t3d_viewport_create_buffered(12);
-  
+  T3DViewport viewport = t3d_viewport_create_buffered(6);
+
   player_init();
   surface_t surf_zbuf;
   /* Try to allocate the Z-Buffer from the top of the heap (near the stack).
@@ -104,6 +112,7 @@ void playtimelogic(){
     timesys_update();
     joypad_poll();
     audioutils_mixer_update();
+    effects_update();
     player_update();
     subtitles_update();
     traversal_update(); // Check for level transitions
@@ -128,10 +137,12 @@ void playtimelogic(){
     rdpq_set_mode_standard();
     temporal_dither(FRAME_NUMBER);
     rdpq_mode_persp(true);
-    t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
     mixer_try_play();
     rdpq_mode_antialias(AA_REDUCED);
     rdpq_mode_zmode(ZMODE_INTERPENETRATING);
+    rdpq_sync_pipe();
+    rdpq_sync_tile();
+    t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
     currentlevel.draw();
     rdpq_sync_pipe();
     rdpq_sync_tile();
@@ -155,6 +166,7 @@ void playtimelogic(){
     mixer_try_play();
   }
   rspq_wait();
+  effects_rumble_stop();
   t3d_viewport_destroy(&viewport);
   currentlevel.free();
 
@@ -258,5 +270,8 @@ void playtimelogic(){
     rspq_wait();
 
     engine_display_init_default();
+    gamecomplete = true;
   }
+
+  subtitles_free_block();
 }

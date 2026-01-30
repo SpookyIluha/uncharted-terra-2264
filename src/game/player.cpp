@@ -12,6 +12,7 @@
 #include "journal_entry.h"
 #include "utils.h"
 #include "player.h"
+#include "effects.h"
 
 player_t player;
 int frame = 0;
@@ -255,7 +256,7 @@ void player_pause_menu(){
         textparms.width = 500;
         textparms.align = ALIGN_LEFT; 
         textparms.valign = VALIGN_TOP;
-        textparms.wrap = WRAP_WORD;
+        textparms.wrap = gamestatus.fonts.wrappingmode;
 
         std::string combined = (entry_name + "\n" + entry_timestamp + "\n\n" + entry_text);
 
@@ -270,13 +271,19 @@ void player_pause_menu(){
         while(!pressed_a){
             joypad_poll();
             audioutils_mixer_update();
+            effects_update();
             subtitles_update();
             timesys_update();
             player.joypad.pressed = joypad_get_buttons_pressed(player.joypad.port);
-            if(player.joypad.pressed.a) {pressed_a = true; continue;}
+            if(player.joypad.pressed.a) {effects_add_rumble(player.joypad.port, 0.1f); pressed_a = true; continue;}
             player.joypad.held = joypad_get_buttons_held(JOYPAD_PORT_1);
-            if(player.joypad.held.d_down) offset += 3;
-            if(player.joypad.held.d_up)   offset -= 3;
+            if(player.joypad.held.d_down) {offset += 3;}
+            if(player.joypad.held.d_up)   {offset -= 3;}
+            if(player.joypad.held.c_down) {offset += 3;}
+            if(player.joypad.held.c_up)   {offset -= 3;}
+            if(player.joypad.input.stick_y > 30) {offset -= 3;}
+            if(player.joypad.input.stick_y < -30) {offset += 3;}
+
             if(offset < 0)  offset  = 0;
             if(offset > height) offset = height;
             
@@ -291,7 +298,7 @@ void player_pause_menu(){
             rspq_block_run(block);
             rdpq_set_mode_standard();
             rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-            rdpq_sprite_blit(button_a, 550, 400, NULL);
+            rdpq_sprite_blit(button_a, 550, 40, NULL);
             rdpq_paragraph_render(paragraph, 80, 50 - offset);
             rdpq_detach_show();
         }
@@ -321,6 +328,7 @@ void player_pause_menu(){
     while(gamestatus.paused){
         joypad_poll();
         audioutils_mixer_update();
+        effects_update();
         subtitles_update();
         timesys_update();
         
@@ -345,10 +353,10 @@ void player_pause_menu(){
 
         const char* select_sound = "inventoryselect";
 
-        if(btn.d_left || axis_stick_x < 0) {columnselector--; rowselector = 0; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false);}
-        if(btn.d_right || axis_stick_x > 0) {columnselector++; rowselector = 0; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false);}
-        if(btn.d_up || axis_stick_y > 0) {rowselector--; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false);}
-        if(btn.d_down || axis_stick_y < 0) {rowselector++; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false);}
+        if(btn.d_left || axis_stick_x < 0) {columnselector--; rowselector = 0; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false); effects_add_rumble(player.joypad.port, 0.1f);}
+        if(btn.d_right || axis_stick_x > 0) {columnselector++; rowselector = 0; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false); effects_add_rumble(player.joypad.port, 0.1f);}
+        if(btn.d_up || axis_stick_y > 0) {rowselector--; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false); effects_add_rumble(player.joypad.port, 0.1f);}
+        if(btn.d_down || axis_stick_y < 0) {rowselector++; sound_play((columnselector == 1 || columnselector == 2) ? "select3" : select_sound, false); effects_add_rumble(player.joypad.port, 0.1f);}
 
         if(btn.start) {
             gamestatus.paused = false;
@@ -370,20 +378,22 @@ void player_pause_menu(){
                 if(rowselector > collecteditems - 1) rowselector = 0;
                 selectorx = 120 - selector->width / 2;
                 item_list_draw_offset = maxi(0,rowselector - 3);
-                selectory = 100 + (rowselector-item_list_draw_offset)*40;
+                selectory = 80 + (rowselector-item_list_draw_offset)*30;
                 itemselectedselectorx = 120 - selector->width / 2;
                 if(item_selected_first != -1 && (rowselector-item_list_draw_offset >= 0 && rowselector-item_list_draw_offset <= 5)){
-                    itemselectedselectory = 100 + (item_selected_first-item_list_draw_offset)*40;
+                    itemselectedselectory = 80 + (item_selected_first-item_list_draw_offset)*30;
                 } else itemselectedselectory = -100;
                 if(btn.a && item_selected_first != -1){
                     player_use_item(player_inventory_get_ith_occupied_item_slot(item_selected_first));
                     gamestatus.paused = false;
+                    effects_add_rumble(player.joypad.port, 0.1f);
                     continue;
                 }
                 else {
                     if(btn.a && item_selected_first == -1){
                         sound_play("select2", false);
                         item_selected_first = rowselector;
+                        effects_add_rumble(player.joypad.port, 0.1f);
                     }
                 }
                 if(btn.b && item_selected_first != -1){
@@ -395,13 +405,14 @@ void player_pause_menu(){
                     item_selected_first = -1;
                     item_selected_second = -1;
                     rowselector = 0;
+                    effects_add_rumble(player.joypad.port, 0.1f);
                 }
             } break;
             case 1:{
                 if(rowselector < 0) rowselector = 5;
                 if(rowselector > 5) rowselector = 0;
                 selectorx = 320 - selector->width / 2;
-                selectory = 100 + (rowselector)*40;
+                selectory = 80 + (rowselector)*30;
                 if(btn.a)
                     switch(rowselector){
                         case 0:{
@@ -413,6 +424,7 @@ void player_pause_menu(){
                             playtimelogic_savegame();
                             gamestatus.paused = false;
                             sound_play("select2", false);
+                            effects_add_rumble(player.joypad.port, 0.1f);
                             subtitles_add(dictstr("MM_saved"), 3.0f, '\0');
                         } break;
                         case 2:{
@@ -420,10 +432,12 @@ void player_pause_menu(){
                                 playtimelogic_loadgame();
                                 gamestatus.paused = false;
                                 sound_play("select2", false);
+                                effects_add_rumble(player.joypad.port, 0.1f);
                             } else {
                                 subtitles_add(dictstr("MM_savenfound"), 3.0f, '\0');
                                 gamestatus.paused = false;
                                 sound_play("select2", false);
+                                effects_add_rumble(player.joypad.port, 0.1f);
                             }
                         } break;
                         case 3:{
@@ -436,6 +450,7 @@ void player_pause_menu(){
                             playtimelogic_gotomainmenu();
                             gamestatus.paused = false;
                             sound_play("select2", false);
+                            effects_add_rumble(player.joypad.port, 0.1f);
                         } break;
                     }
             } break;
@@ -444,9 +459,10 @@ void player_pause_menu(){
                 if(rowselector > collectedentries - 1) rowselector = 0;
                 journal_list_draw_offset = maxi(0, rowselector - 3);
                 selectorx = 520 - selector->width / 2;
-                selectory = 100 + (rowselector-journal_list_draw_offset)*40;
+                selectory = 80 + (rowselector-journal_list_draw_offset)*30;
                 if(btn.a){
                     sound_play("journal", false);
+                    effects_add_rumble(player.joypad.port, 0.1f);
                     player_pause_menu_show_journal_entry(rowselector);
                 }
             } break;
@@ -468,9 +484,9 @@ void player_pause_menu(){
         textparms.align = ALIGN_CENTER;
         textparms.wrap = WRAP_ELLIPSES;
 
-        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 320 - 100, 80, dictstr("PAUSE_paused"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 120 - 100, 80, dictstr("PAUSE_items"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 520 - 100, 80, dictstr("PAUSE_journals"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 320 - 100, 60, dictstr("PAUSE_paused"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 120 - 100, 60, dictstr("PAUSE_items"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 520 - 100, 60, dictstr("PAUSE_journals"));
 
         rdpq_set_mode_standard();
         rdpq_set_prim_color(RGBA32(255,255,255,255));
@@ -483,30 +499,30 @@ void player_pause_menu(){
         }
 
         rdpq_mode_combiner(RDPQ_COMBINER1((0,0,0,TEX0),(0,0,0,TEX0)));
-        rdpq_sprite_blit(button_a, 640 - 120 - 40, 30, NULL);
+        rdpq_sprite_blit(button_a, 640 - 120 - 40, 10, NULL);
         textparms.align = ALIGN_LEFT;
         if(columnselector == 0 && item_selected_first != -1){
-            rdpq_sprite_blit(button_b, 640 - 320 - 40, 30, NULL);
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 320, 50, dictstr("PAUSE_combine_items")); 
+            rdpq_sprite_blit(button_b, 640 - 320 - 40, 10, NULL);
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 320, 30, dictstr("PAUSE_combine_items")); 
         }
         if(columnselector == 0 && item_selected_first == -1){
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 50, dictstr("PAUSE_select")); 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 30, dictstr("PAUSE_select")); 
         } else if (columnselector == 0 && item_selected_first != -1){
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 50, dictstr("PAUSE_use_item")); 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 30, dictstr("PAUSE_use_item")); 
         }
         if(columnselector == 1){
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 50, dictstr("PAUSE_select")); 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 30, dictstr("PAUSE_select")); 
         }
         if(columnselector == 2){
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 50, dictstr("PAUSE_read_journal")); 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 30, dictstr("PAUSE_read_journal")); 
         }
         textparms.align = ALIGN_CENTER;
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 120, dictstr("PAUSE_continue")); 
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 160, dictstr("PAUSE_savegame"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 200, dictstr("PAUSE_loadgame"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 240, dictstr("PAUSE_togglemusic"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 280, dictstr("PAUSE_togglesounds"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 320, dictstr("PAUSE_exittomenu"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 100, dictstr("PAUSE_continue")); 
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 130, dictstr("PAUSE_savegame"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 160, dictstr("PAUSE_loadgame"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 190, dictstr("PAUSE_togglemusic"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 220, dictstr("PAUSE_togglesounds"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 250, dictstr("PAUSE_exittomenu"));
 
         textparms.width = 170;
         textparms.align = ALIGN_LEFT;
@@ -515,7 +531,7 @@ void player_pause_menu(){
             int item_slot = player_inventory_get_ith_occupied_item_slot(i);
             int item_id = player_inventory_get_ith_occupied_item_slot_item_id(i);
             std::string itemname = (itemsdict[items_names[item_id]]["fullname"] | "UNKNOWN_ITEM_NAME");
-            int y = 120 + drawnitems*40;
+            int y = 100 + drawnitems*30;
             rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 50, y, 
                 "%i: %s x %d", i+1, itemname.c_str(), 
                 player_inventory_get_item_count(item_slot));
@@ -523,8 +539,8 @@ void player_pause_menu(){
                 rdpq_textparms_t descparms;
                 descparms.width = display_get_width() - 60;
                 descparms.align = ALIGN_LEFT;
-                descparms.wrap = WRAP_WORD;
-                rdpq_text_printf(&descparms, gamestatus.fonts.subtitlefont, 30, 420, 
+                descparms.wrap = gamestatus.fonts.wrappingmode;
+                rdpq_text_printf(&descparms, gamestatus.fonts.subtitlefont, 30, display_get_height() - 70, 
                     "%s x %d. %s", itemname.c_str(), 
                     player_inventory_get_item_count(item_slot), (itemsdict[items_names[item_id]]["description"] | "UNKNOWN_ITEM_DESCRIPTION").c_str());
             }
@@ -532,7 +548,7 @@ void player_pause_menu(){
         
         for(int i = journal_list_draw_offset, drawnentries = 0; i < collectedentries && drawnentries < 6; i++, drawnentries++){
             int journal_entry_id = get_collected_journal_entry_id_by_collected_index(i);
-            int y = 120 + drawnentries*40;
+            int y = 100 + drawnentries*30;
             rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 450, y, 
                 "%i: %s", i + 1, (journals[std::to_string(journal_entry_id)]["name"] | "UNKNOWN_TITLE").c_str());
         }

@@ -5,6 +5,8 @@
 extern "C"{
 #endif
 
+extern bool gamecomplete;
+
 /// @brief Main gameplay loop
 extern void playtimelogic();
 

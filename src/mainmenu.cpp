@@ -14,6 +14,7 @@
 
 bool cont = false;
 
+
 camera_t maincamera;
 T3DMWModel model;
 
@@ -43,6 +44,7 @@ float camlocations[5][4][3] = {
 
 
 void new_game(){
+    effects_rumble_stop();
     sprite_t* bg = sprite_load(filesystem_getfn(DIR_IMAGE, "menu/storytime").c_str() );
     surface_t bgsurf = sprite_get_pixels(bg);
     bool pressed_start = false;
@@ -96,7 +98,7 @@ void new_game(){
         rdpq_sprite_blit(bg, display_get_width() / 2, display_get_height() / 2, &blitparms);
 
         rdpq_mode_filter(FILTER_BILINEAR);
-        rdpq_textparms_t parms; parms.align = ALIGN_LEFT; parms.width = display_get_width() - 80; parms.style_id = gamestatus.fonts.titlefontstyle; parms.wrap = WRAP_WORD;
+        rdpq_textparms_t parms; parms.align = ALIGN_LEFT; parms.width = display_get_width() - 80; parms.style_id = gamestatus.fonts.titlefontstyle; parms.wrap = gamestatus.fonts.wrappingmode;
         rdpq_text_printf(&parms, gamestatus.fonts.titlefont, 40, (int)(scissor_y + 140 - time * 10), buffer.str().c_str());
 
         rdpq_sync_tile();
@@ -137,7 +139,7 @@ void game_draw(){
     t3d_vec3_lerp(&maincamera.camTarget_off, &maincamera.camTarget_off, &maincamera.camTarget, 0.1f);
     t3d_vec3_lerp(&maincamera.camPos_off, &maincamera.camPos_off, &maincamera.camPos, 0.1f);
     t3d_viewport_set_projection(&viewport, T3D_DEG_TO_RAD(85.0f), 16.0f, 2300.0f);  
-    T3DVec3 camtarg_shake = (T3DVec3){.x = frandr(-1,1) * effects.screenshaketime, .y = frandr(-1,1) * effects.screenshaketime, .z = frandr(-1,1) * effects.screenshaketime};
+    T3DVec3 camtarg_shake = (T3DVec3){0, 0, 0};
     t3d_vec3_add(&camtarg_shake, &maincamera.camTarget_off, &camtarg_shake);
     T3DVec3 upvec; upvec.v[0] = 0; upvec.v[1] = 1; upvec.v[2] = 0;
     t3d_viewport_look_at(&viewport, &maincamera.camPos_off, &camtarg_shake, &upvec);
@@ -160,7 +162,7 @@ void game_draw(){
     t3d_light_set_ambient(colorAmbient);
     t3d_light_set_count(0);
 
-    rdpq_set_fog_color(RGBA32(255,255,255,255));
+    rdpq_set_fog_color(RGBA32(109,94,90,255));
     temporal_dither(FRAME_NUMBER);
     model.draw();
 
@@ -168,6 +170,7 @@ void game_draw(){
 }
 
 void game_menu(){
+    effects_rumble_stop();
     sound_stop();
     bgm_stop(0);
     bgm_play("dead_windmills", true, 0);
@@ -175,9 +178,9 @@ void game_menu(){
     surface_t bgsurf = sprite_get_pixels(bg);
     sprite_t* button_a = sprite_load(filesystem_getfn(DIR_IMAGE, "ui/button_a.rgba32").c_str());
 
-    viewport = t3d_viewport_create_buffered(12);
+    viewport = t3d_viewport_create_buffered(6);
     model = T3DMWModel();
-    model.load(filesystem_getfn(DIR_MODEL, "mainmenu/model").c_str());
+    model.load(filesystem_getfn(DIR_MODEL, gamecomplete? "mainmenu/model2" : "mainmenu/model").c_str());
 
     t3d_light_set_exposure(1);
     cont = false;

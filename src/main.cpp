@@ -9,6 +9,7 @@
 #include "level.h"
 #include "subtitles.h"
 #include "audioutils.h"
+#include "effects.h"
 #include "game/entity_register.h"
 #include "playtimelogic.h"
 
@@ -27,6 +28,7 @@ void systems_init(){
     timer_init();
     joypad_init();
     timesys_init();
+    effects_init();
     srand(getentropy32());
     register_VI_handler((void(*)())rand);
 

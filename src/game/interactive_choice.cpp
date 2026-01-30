@@ -5,6 +5,7 @@
  #include "player.h"
  #include "subtitles.h"
  #include <libdragon.h>
+ #include "effects.h"
  
  InteractiveChoice::InteractiveChoice(const std::string& name, int id)
      : Entity(name, INTERACTIVE_CHOICE_TYPE_NAME, id),
@@ -40,6 +41,7 @@ void InteractiveChoice::init(){
          subtitles_add(dictstr("interact"), 1.0f, 'A');
          if(player.joypad.pressed.a){
              sound_play("select", false);
+             effects_add_rumble(player.joypad.port, 0.1f);
              open_menu();
          }
      }
@@ -84,6 +86,7 @@ void InteractiveChoice::init(){
      while(running){
          joypad_poll();
          audioutils_mixer_update();
+         effects_update();
          rdpq_attach(display_get(), NULL);
          if(display_interlace_rdp_field() >= 0) 
              rdpq_enable_interlaced(display_interlace_rdp_field());
@@ -136,11 +139,13 @@ void InteractiveChoice::init(){
                  if(!choice2_command.empty()) execute_console_command(choice2_command);
              }
              sound_play("select2", false);
+             effects_add_rumble(JOYPAD_PORT_1, 0.1f);
              running = false;
              used = true;
          }
          if(btn.b && !forced_choice){
              sound_play("select", false);
+             effects_add_rumble(JOYPAD_PORT_1, 0.1f);
              running = false;
          }
      }

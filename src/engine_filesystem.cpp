@@ -60,6 +60,13 @@ void engine_config_load(){
     gamestatus.fonts.subtitlefontstyle =  ini["Fonts"]["subtitlefontstyle"]   | 0;
     gamestatus.fonts.unavailablefontstyle = ini["Fonts"]["unavailablefontstyle"] | 0;
 
+    std::string wrappingmode = ini["Fonts"]["wrappingmode"] | "WRAP_WORD";
+    if(wrappingmode == "WRAP_WORD"){
+        gamestatus.fonts.wrappingmode = WRAP_WORD;
+    } else if (wrappingmode == "WRAP_CHAR"){
+        gamestatus.fonts.wrappingmode = WRAP_CHAR;
+    }
+
     if(gamestatus.fonts.fontcount){
         for(int i = 1; i <= gamestatus.fonts.fontcount; i++){
             rdpq_text_unregister_font(i);

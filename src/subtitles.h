@@ -20,5 +20,6 @@ void subtitles_add(const char* text, float duration, char buttonsprite, int prio
 void subtitles_draw();
 
 void subtitles_free();
+void subtitles_free_block();
 
 #endif

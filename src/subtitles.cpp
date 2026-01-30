@@ -17,6 +17,8 @@ sprite_t* start_button;
 
 sprite_t* selectedsprite;
 
+rspq_block_t* subtitlesblock = NULL;
+
 void subtitles_init(){
     subtitle_duration = 0.0f;
     current_subtitle[0] = '\0';
@@ -35,6 +37,17 @@ void subtitles_free(){
     sprite_free(a_button);
     sprite_free(b_button);
     sprite_free(start_button);
+    if(subtitlesblock) {
+        rspq_block_free(subtitlesblock); 
+        subtitlesblock = NULL;
+    }
+}
+
+void subtitles_free_block(){
+    if(subtitlesblock) {
+        rspq_block_free(subtitlesblock); 
+        subtitlesblock = NULL;
+    }
 }
 
 void subtitles_update(){
@@ -54,8 +67,13 @@ void subtitles_add(const char* text, float duration, char buttonsprite, int prio
     current_priority = priority;
 
     assertf(strlen(text) < SUBTITLES_MAX_LENGTH, "Subtitle text too long %s", text);
-    strcpy(current_subtitle, text);
     subtitle_duration = duration;
+    if(!strcmp(text, current_subtitle)) return;
+    strcpy(current_subtitle, text);
+    if(subtitlesblock) {
+        rspq_block_free(subtitlesblock); 
+        subtitlesblock = NULL;
+    }
     switch(buttonsprite){
         case 'A': selectedsprite = a_button; break;
         case 'B': selectedsprite = b_button; break;
@@ -77,14 +95,17 @@ void subtitles_draw(){
    parms.width = display_get_width() * 0.75f;
    parms.height = SUBTITLES_HEIGHT;
    parms.align = ALIGN_CENTER;
-   parms.wrap = WRAP_WORD;
+   parms.wrap = gamestatus.fonts.wrappingmode;
    parms.style_id = gamestatus.fonts.subtitlefontstyle;
-   rdpq_text_printf(&parms, gamestatus.fonts.subtitlefont, display_get_width() * 0.125f, display_get_height() - SUBTITLES_OFFSET_Y , "%s", current_subtitle);
-   if(selectedsprite && alpha > 0.9f){
-      rdpq_set_mode_standard();
-      rdpq_mode_alphacompare(8);
-      rdpq_sprite_blit(selectedsprite, (display_get_width() - selectedsprite->width)/2, display_get_height() - SUBTITLES_OFFSET_Y - selectedsprite->height - 5, NULL);
-   }
+   if(!subtitlesblock){
+    rspq_block_begin();
+    rdpq_text_printf(&parms, gamestatus.fonts.subtitlefont, display_get_width() * 0.125f, display_get_height() - SUBTITLES_OFFSET_Y , "%s", current_subtitle);
+    if(selectedsprite){
+        rdpq_set_mode_standard();
+        rdpq_mode_alphacompare(8);
+        rdpq_sprite_blit(selectedsprite, (display_get_width() - selectedsprite->width)/2, display_get_height() - SUBTITLES_OFFSET_Y - selectedsprite->height - 5, NULL);
+    }
+    subtitlesblock = rspq_block_end();
+   } rspq_block_run(subtitlesblock);
 
 }
-

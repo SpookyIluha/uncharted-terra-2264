@@ -3,6 +3,7 @@
 #include "engine_command.h"
 #include "player.h"
 #include "subtitles.h"
+#include "effects.h"
 #include "item_instance.h"
 
 bool itemsloaded = false;
@@ -127,6 +128,7 @@ void ItemInstance::update() {
                 subtitles_add(dictstr("pickup"), 1.0f, 'A');
                 if(player.joypad.pressed.a){
                     pickedup = true;
+                    effects_add_rumble(player.joypad.port, 0.1f);
                     player_inventory_additem(item_id, 1);
                     sound_play("item_pickup", false);
                     std::string pickupmessage = (itemsdict[name]["pickupmessage"] | "");

@@ -3,6 +3,7 @@
 #include "engine_command.h"
 #include "player.h"
 #include "subtitles.h"
+#include "effects.h"
 #include "journal_entry.h"
 
 bool journalsloaded = false;
@@ -111,6 +112,7 @@ void JournalEntry::update() {
             subtitles_add(dictstr("pickup"), 1.0f, 'A');
             if(player.joypad.held.a){
                 pickedup = true;
+                effects_add_rumble(player.joypad.port, 0.1f);
                 gamestatus.state.game.journalscollectedbitflag |= (1 << entry_id);
                 std::string pickupmessage = (journals[std::to_string(entry_id)]["pickupmessage"] | "");
                 sound_play("3beeps", false);

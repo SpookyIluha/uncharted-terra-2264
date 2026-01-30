@@ -5,6 +5,7 @@
 #include "subtitles.h"
 #include "engine_filesystem.h"
 #include <libdragon.h>
+#include "effects.h"
 
 InteractiveKeypad::InteractiveKeypad(const std::string& name, int id)
     : Entity(name, INTERACTIVE_KEYPAD_TYPE_NAME, id),
@@ -38,6 +39,7 @@ void InteractiveKeypad::update(){
         subtitles_add(dictstr("keypad_use"), 1.0f, 'A');
         if(player.joypad.pressed.a){
             sound_play("select", false);
+            effects_add_rumble(player.joypad.port, 0.1f);
             open_menu();
         }
     }
@@ -82,11 +84,12 @@ void InteractiveKeypad::open_menu(){
     while(running){
         joypad_poll();
         audioutils_mixer_update();
+        effects_update();
         timesys_update();
         joypad_buttons_t pressed = joypad_get_buttons_pressed(JOYPAD_PORT_1);
         int axis_x = joypad_get_axis_pressed(JOYPAD_PORT_1, JOYPAD_AXIS_STICK_X);
         int axis_y = joypad_get_axis_pressed(JOYPAD_PORT_1, JOYPAD_AXIS_STICK_Y);
-        if(pressed.b || pressed.start) {running = false; sound_play("robotnoise", false); break;}
+        if(pressed.b || pressed.start) {running = false; sound_play("robotnoise", false); effects_add_rumble(JOYPAD_PORT_1, 0.1f); break;}
         if(pressed.a){
             char input[16] = {0};
             for(int i=0;i<digit_count;i++){
@@ -101,19 +104,21 @@ void InteractiveKeypad::open_menu(){
                     subtitles_add(dictstr(success_subtitle.c_str()), 5.0f, '\0', 10);
                 }
                 sound_play("consolebeep", false);
+                effects_add_rumble(JOYPAD_PORT_1, 0.1f);
                 unlocked = true;
                 running = false;
                 break;
             } else {
                 sound_play("invalid2", false);
+                effects_add_rumble(JOYPAD_PORT_1, 0.1f);
             }
         }
-        if(pressed.d_left || axis_x < 0){ selected--; sound_play("chime1", false); }
-        if(pressed.d_right || axis_x > 0){ selected++; sound_play("chime1", false); }
+        if(pressed.d_left || axis_x < 0){ selected--; sound_play("chime1", false); effects_add_rumble(JOYPAD_PORT_1, 0.1f); }
+        if(pressed.d_right || axis_x > 0){ selected++; sound_play("chime1", false); effects_add_rumble(JOYPAD_PORT_1, 0.1f); }
         if(selected < 0) selected = digit_count - 1;
         if(selected >= digit_count) selected = 0;
-        if(pressed.d_up || axis_y > 0){ digits[selected] = (digits[selected] + 1) % 10; sound_play("chime1", false); }
-        if(pressed.d_down || axis_y < 0){ digits[selected] = (digits[selected] + 9) % 10; sound_play("chime1", false); }
+        if(pressed.d_up || axis_y > 0){ digits[selected] = (digits[selected] + 1) % 10; sound_play("chime1", false); effects_add_rumble(JOYPAD_PORT_1, 0.1f); }
+        if(pressed.d_down || axis_y < 0){ digits[selected] = (digits[selected] + 9) % 10; sound_play("chime1", false); effects_add_rumble(JOYPAD_PORT_1, 0.1f); }
         rdpq_attach(display_get(), NULL);
         if(display_interlace_rdp_field() >= 0) rdpq_enable_interlaced(display_interlace_rdp_field());
         else rdpq_disable_interlaced();

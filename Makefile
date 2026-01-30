@@ -82,12 +82,12 @@ $(FILESYSTEM_DIR)/%.t3dm: assets/%.glb
 $(FILESYSTEM_DIR)/scripts/%: $(ASSETS_DIR)/scripts/%
 	@mkdir -p $(dir $@)
 	@echo "    [TEXT] $@"
-	cp "$<" $@
+	$(N64_BINDIR)/mkasset -c 0 -o $(dir $@) "$<"
 
 $(FILESYSTEM_DIR)/movies/%: $(ASSETS_DIR)/movies/%
 	@mkdir -p $(dir $@)
 	@echo "    [M1V] $@"
-	cp "$<" $@
+	$(N64_BINDIR)/mkasset -c 0 -o $(dir $@) "$<"
 
 $(BUILD_DIR)/$(NAME).dfs: $(ASSETS_LIST)
 $(BUILD_DIR)/$(NAME).elf: $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/%.cpp=$(BUILD_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/$(GAME_SOURCE_DIR)/%.c=$(BUILD_DIR)/$(GAME_SOURCE_DIR)/%.o) $(SRCS:$(SOURCE_DIR)/$(GAME_SOURCE_DIR)/%.cpp=$(BUILD_DIR)/$(GAME_SOURCE_DIR)/%.o)
@@ -96,6 +96,7 @@ $(NAME).z64: N64_ROM_TITLE=$(ROM_NAME)
 $(NAME).z64: $(BUILD_DIR)/$(NAME).dfs
 $(NAME).z64: N64_ROM_SAVETYPE = eeprom16k
 $(NAME).z64: N64_ROM_METADATA=metadata/metadata.ini
+$(NAME).z64: N64_METADATAFLAGS = --padding 1048576
 
 rebuild:
 	rm -rf $(BUILD_DIR)

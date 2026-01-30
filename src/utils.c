@@ -188,7 +188,7 @@ bool collideAABB(
         return false;
     }
 
-    // Collision occurred — resolve along minimum penetration axis
+    // Collision occurred - resolve along minimum penetration axis
     if(out){
         if (px < py && px < pz)
         {

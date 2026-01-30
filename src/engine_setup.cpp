@@ -45,9 +45,15 @@ void check_language_config(){
         std::vector<const char*> languages_names;
         std::vector<const char*> languages_keys;
         // for each language add it to vector of strings
+        if(languages.count("en")){
+            languages_keys.push_back("en");
+            languages_names.push_back(unquote(languages["en"]).c_str());
+        }
         for(auto& pair : languages){
-            languages_keys.push_back(pair.first.c_str());
-            languages_names.push_back(unquote(pair.second).c_str());
+            if(pair.first != "en"){
+                languages_keys.push_back(pair.first.c_str());
+                languages_names.push_back(unquote(pair.second).c_str());
+            }
         }
         int selection = 0;
         bool isselected = false;
@@ -75,11 +81,11 @@ void check_language_config(){
             rdpq_attach(display_get(), NULL);
             rdpq_clear(RGBA32(0,0,0,0));
             textparms.style_id = gamestatus.fonts.titlefontstyle;
-            rdpq_text_printf(&textparms, gamestatus.fonts.titlefont, 0, 80, dictstr("choose_lang"));
+            rdpq_text_printf(&textparms, gamestatus.fonts.titlefont, 0, 50, dictstr("choose_lang"));
             rdpq_set_mode_standard();
             rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
             rdpq_set_prim_color(RGBA32(50,50,50,255));
-            int y = 200;
+            int y = 160;
             textparms.style_id = 0;
             textparms.height = 30;
             textparms.valign = VALIGN_CENTER;

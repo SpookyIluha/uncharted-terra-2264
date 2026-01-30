@@ -141,7 +141,6 @@ T3DMWModel::~T3DMWModel() {
 }
 
 void T3DMWModel::free() {
-    rspq_wait();
     if (model) {
         t3d_model_free(model);
         model = nullptr;
