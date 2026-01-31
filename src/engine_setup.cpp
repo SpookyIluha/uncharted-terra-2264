@@ -35,7 +35,7 @@ void check_language_config(){
     engine_load_languages();
     assertf(languages.size(), "Game doesn't contain any language packs");
     if(engine_get_language()){
-        debugf("Game language: %s\n", engine_get_language());
+        //debugf("Game language: %s\n", engine_get_language());
         engine_load_dictionary();
         engine_config_load();
         return;

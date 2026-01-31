@@ -93,14 +93,13 @@
 
 #include <map>
 #include <string>
-#include <iostream>
-#include <iomanip>
 #include <algorithm>
 #include <locale>
-#include <sstream>
 #include <type_traits>
 #include <limits>
 #include <cctype>
+#include <cstdio>
+#include <cstdlib>
 
 namespace tortellini {
 
@@ -160,34 +159,61 @@ public:
 
 		inline value(value &&) = default;
 
-		template <typename T, T (*Fn)(const std::string &, size_t *)>
-		static inline T strparse(const std::string &s, T fallback) noexcept {
+		static inline unsigned long parse_ul(const std::string &s, unsigned long fallback) noexcept {
 			if (s.empty()) return fallback;
-
-			try {
-				size_t idx;
-				T res = Fn(s, &idx);
-				return s[idx] ? fallback : res;
-			} catch (std::out_of_range &) {
-				return fallback;
-			} catch (std::invalid_argument &) {
-				return fallback;
-			}
+			const char* c = s.c_str();
+			char* e = nullptr;
+			unsigned long v = std::strtoul(c, &e, 0);
+			if (!c[0] || (e && *e)) return fallback;
+			return v;
 		}
-
-		template <typename T, T (*Fn)(const std::string &, size_t *, int)>
-		static inline T strparse(const std::string &s, T fallback) noexcept {
+		static inline unsigned long long parse_ull(const std::string &s, unsigned long long fallback) noexcept {
 			if (s.empty()) return fallback;
-
-			try {
-				size_t idx;
-				T res = Fn(s, &idx, 0);
-				return s[idx] ? fallback : res;
-			} catch (std::out_of_range &) {
-				return fallback;
-			} catch (std::invalid_argument &) {
-				return fallback;
-			}
+			const char* c = s.c_str();
+			char* e = nullptr;
+			unsigned long long v = std::strtoull(c, &e, 0);
+			if (!c[0] || (e && *e)) return fallback;
+			return v;
+		}
+		static inline long parse_l(const std::string &s, long fallback) noexcept {
+			if (s.empty()) return fallback;
+			const char* c = s.c_str();
+			char* e = nullptr;
+			long v = std::strtol(c, &e, 0);
+			if (!c[0] || (e && *e)) return fallback;
+			return v;
+		}
+		static inline long long parse_ll(const std::string &s, long long fallback) noexcept {
+			if (s.empty()) return fallback;
+			const char* c = s.c_str();
+			char* e = nullptr;
+			long long v = std::strtoll(c, &e, 0);
+			if (!c[0] || (e && *e)) return fallback;
+			return v;
+		}
+		static inline float parse_f(const std::string &s, float fallback) noexcept {
+			if (s.empty()) return fallback;
+			const char* c = s.c_str();
+			char* e = nullptr;
+			float v = std::strtof(c, &e);
+			if (!c[0] || (e && *e)) return fallback;
+			return v;
+		}
+		static inline double parse_d(const std::string &s, double fallback) noexcept {
+			if (s.empty()) return fallback;
+			const char* c = s.c_str();
+			char* e = nullptr;
+			double v = std::strtod(c, &e);
+			if (!c[0] || (e && *e)) return fallback;
+			return v;
+		}
+		static inline long double parse_ld(const std::string &s, long double fallback) noexcept {
+			if (s.empty()) return fallback;
+			const char* c = s.c_str();
+			char* e = nullptr;
+			long double v = std::strtold(c, &e);
+			if (!c[0] || (e && *e)) return fallback;
+			return v;
 		}
 
 		template <typename T>
@@ -198,9 +224,10 @@ public:
 			if (std::is_same<T, bool>::value) {
 				return r ? "yes" : "no";
 			} else if (std::is_floating_point<T>::value) {
-				std::ostringstream out;
-				out << std::setprecision(std::numeric_limits<T>::max_digits10 - 1) << r;
-				return out.str();
+				char buf[32];
+				int precision = (int)std::numeric_limits<double>::max_digits10 - 1;
+				std::snprintf(buf, sizeof(buf), "%.*g", precision, (double)r);
+				return std::string(buf);
 			} else {
 				return std::to_string(r);
 			}
@@ -248,59 +275,47 @@ public:
 		}
 
 		inline unsigned long operator |(unsigned long fallback) const {
-			return strparse<unsigned long, std::stoul>(_value, fallback);
+			return parse_ul(_value, fallback);
 		}
 
 		inline unsigned long long operator |(unsigned long long fallback) const {
-			return strparse<unsigned long long, std::stoull>(_value, fallback);
+			return parse_ull(_value, fallback);
 		}
 
 		inline long operator |(long fallback) const {
-			return strparse<long, std::stol>(_value, fallback);
+			return parse_l(_value, fallback);
 		}
 
 		inline long long operator |(long long fallback) const {
-			return strparse<long long, std::stoll>(_value, fallback);
+			return parse_ll(_value, fallback);
 		}
 
 		inline float operator |(float fallback) const {
-			return strparse<float, std::stof>(_value, fallback);
+			return parse_f(_value, fallback);
 		}
 
 		inline double operator |(double fallback) const {
-			return strparse<double, std::stod>(_value, fallback);
+			return parse_d(_value, fallback);
 		}
 
 		inline long double operator |(long double fallback) const {
-			return strparse<long double, std::stold>(_value, fallback);
+			return parse_ld(_value, fallback);
 		}
 
 		inline int operator |(int fallback) const {
-			return strparse<int, std::stoi>(_value, fallback);
+			return (int)parse_l(_value, (long)fallback);
 		}
 
 		inline unsigned int operator |(unsigned int fallback) const {
 			/*
 				This is necessary because there is no std::stou.
 			*/
-			try {
-				size_t idx;
-				unsigned long ul = std::stoul(_value, &idx, 0);
-
-				if (
-					   sizeof(unsigned int) != sizeof(unsigned long)
-					&& ul > std::numeric_limits<unsigned int>::max()
-				) {
-					// out of range
-					return fallback;
-				}
-
-				return static_cast<unsigned int>(ul);
-			} catch (std::out_of_range &) {
-				return fallback;
-			} catch (std::invalid_argument &) {
+			unsigned long ul = parse_ul(_value, (unsigned long)fallback);
+			if (sizeof(unsigned int) != sizeof(unsigned long)
+				&& ul > std::numeric_limits<unsigned int>::max()) {
 				return fallback;
 			}
+			return (unsigned int)ul;
 		}
 	};
 
@@ -476,7 +491,7 @@ public:
 			if (itr != ini._sections.cend()) {
 				for (const auto &kv : itr->second) {
 					if (kv.first.empty() || kv.second.empty()) continue;
-					stream << kv.first << " = " << kv.second << std::endl;
+					stream << kv.first << " = " << kv.second << '\n';
 					has_sections = true;
 				}
 			}
@@ -491,13 +506,13 @@ public:
 				if (kv.first.empty() || kv.second.empty()) continue;
 
 				if (!has_emitted) {
-					if (has_sections) stream << std::endl;
-					stream << '[' << section.first << ']' << std::endl;
+					if (has_sections) stream << '\n';
+					stream << '[' << section.first << ']' << '\n';
 					has_emitted = true;
 					has_sections = true;
 				}
 
-				stream << kv.first << " = " << kv.second << std::endl;
+				stream << kv.first << " = " << kv.second << '\n';
 			}
 		}
 

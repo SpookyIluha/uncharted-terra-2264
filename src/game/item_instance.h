@@ -7,7 +7,7 @@
 #define ITEM_INSTANCE_TYPE_NAME ("ItemInstance")
 
 #define ITEM_INSTANCE_PICKEDUP_BIT (1<<3)
-#define MAX_ITEMS 256
+#define MAX_ITEMS 128
 
 extern tortellini::ini itemsdict;
 extern std::string items_names[MAX_ITEMS];

@@ -17,7 +17,7 @@
 #define ENTITY_HAS_EEPROM_DATA (1<<0)
 #define MAX_ENTITY_TYPES 16
 #define MAX_ENTITY_COMMANDS 96
-#define MAX_COMMAND_NAME 32
+#define MAX_COMMAND_NAME 48
 
 // Forward declarations
 namespace tortellini {

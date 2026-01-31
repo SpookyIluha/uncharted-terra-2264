@@ -30,7 +30,6 @@ bool T3DMWModel::load(const char* filepath) {
             obj.object = iter.object;
 
             if(iter.object->material){
-                // parse material name for simple command-line-style arguments and configure ModelObject
                 obj.renderorder = 0;
                 obj.hscroll = 0.0f;
                 obj.vscroll = 0.0f;
@@ -58,25 +57,33 @@ bool T3DMWModel::load(const char* filepath) {
                     // normalize key to lowercase
                     for (char &c : key) c = (char)std::tolower((unsigned char)c);
 
-                    // apply parsed values
-                    try {
-                        if (key == "-r" || key == "-renderorder") {
-                            obj.renderorder = std::stoi(val);
-                        } else if (key == "-hs") {
-                            obj.hscroll = std::stof(val);
-                        } else if (key == "-vs") {
-                            obj.vscroll = std::stof(val);
-                        } else if (key == "-zr") {
-                            obj.zread = std::stoi(val);
-                        } else if (key == "-zw") {
-                            obj.zwrite = std::stoi(val);
-                        } else if (key == "-fog") {
-                            obj.fog = std::stoi(val);
-                        }
-                    } catch (...) {
-                        debugf("Warning: malformed value for key '%s' in material '%s'\n", key.c_str(), mat);
-                        // ignore malformed numbers
-                    }
+                auto parse_int = [](const std::string& s, int d)->int{
+                    const char* c = s.c_str();
+                    char* e = nullptr;
+                    long v = std::strtol(c, &e, 0);
+                    if (!c[0] || (e && *e)) return d;
+                    return (int)v;
+                };
+                auto parse_float = [](const std::string& s, float d)->float{
+                    const char* c = s.c_str();
+                    char* e = nullptr;
+                    float v = std::strtof(c, &e);
+                    if (!c[0] || (e && *e)) return d;
+                    return v;
+                };
+                if (key == "-r" || key == "-renderorder") {
+                    obj.renderorder = parse_int(val, obj.renderorder);
+                } else if (key == "-hs") {
+                    obj.hscroll = parse_float(val, obj.hscroll);
+                } else if (key == "-vs") {
+                    obj.vscroll = parse_float(val, obj.vscroll);
+                } else if (key == "-zr") {
+                    obj.zread = parse_int(val, obj.zread) != 0;
+                } else if (key == "-zw") {
+                    obj.zwrite = parse_int(val, obj.zwrite) != 0;
+                } else if (key == "-fog") {
+                    obj.fog = parse_int(val, obj.fog);
+                }
                 }
             }
 

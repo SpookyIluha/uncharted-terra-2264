@@ -36,7 +36,7 @@ static int prewarm_sfx_count = 0;
 int audio_prewarm_all_sounds_callback(const char *fn, dir_t *dir, void *data){
     if(prewarm_sfx_count >= 64) return DIR_WALK_CONTINUE;
     char nameonly[128] = {0};
-    char nameres[32] = {0};
+    char nameres[SHORTSTR_LENGTH] = {0};
     strcpy(nameonly, strrchr(fn, '/') + 1);
     *strrchr(nameonly, '.') = '\0';
     strcpy(nameres, nameonly);
@@ -50,7 +50,7 @@ int audio_prewarm_all_sounds_callback(const char *fn, dir_t *dir, void *data){
 int audio_prewarm_all_music_callback(const char *fn, dir_t *dir, void *data){
     if(prewarm_music_wav_count >= 8) return DIR_WALK_CONTINUE;
     char nameonly[128] = {0};
-    char nameres[32] = {0};
+    char nameres[SHORTSTR_LENGTH] = {0};
     strcpy(nameonly, strrchr(fn, '/') + 1);
     *strrchr(nameonly, '.') = '\0';
     strcpy(nameres, nameonly);
@@ -64,7 +64,7 @@ int audio_prewarm_all_music_callback(const char *fn, dir_t *dir, void *data){
 int audio_prewarm_all_xmmusic_callback(const char *fn, dir_t *dir, void *data){
     if(prewarm_music_xm_count >= 8) return DIR_WALK_CONTINUE;
     char nameonly[128] = {0};
-    char nameres[32] = {0};
+    char nameres[SHORTSTR_LENGTH] = {0};
     strcpy(nameonly, strrchr(fn, '/') + 1);
     *strrchr(nameonly, '.') = '\0';
     strcpy(nameres, nameonly);

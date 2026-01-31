@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-#define SUBTITLES_MAX_LENGTH 256
+#define SUBTITLES_MAX_LENGTH 400
 #define SUBTITLES_HEIGHT 100
 #define SUBTITLES_OFFSET_Y 100
 #define CHARACTERS_PER_SEC_DISPLAY 20

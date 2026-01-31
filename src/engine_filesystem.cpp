@@ -10,6 +10,7 @@
 std::map<std::string, std::string> dictionary;
 std::map<std::string, std::string> languages;
 
+// Load translated string dictionary from current language locale
 void engine_load_dictionary(){
     rspq_wait();
     dictionary.clear();
@@ -25,6 +26,7 @@ void engine_load_dictionary(){
     }
 }
 
+// Replace quoted strings and escaped newlines with actual characters
 std::string& unquote(std::string& s){
     if ( s.front() == '"' ) {
         s.erase( 0, 1 ); // erase the first character
@@ -38,7 +40,7 @@ std::string& unquote(std::string& s){
 }
 
 
-/// @brief Load a default .ini configuration file with all the info on the game's structure (rom://scripts/lang/config.ini)
+/// @brief Load game configuration (fonts, start level, UI settings) from config.ini in current language
 void engine_config_load(){
     tortellini::ini ini;
 
@@ -118,6 +120,7 @@ const char* dictstr(const char* name){
     else return name;
 }
 
+// Load available languages list from scripts/languages.ini
 void engine_load_languages(){
     languages.clear();
 
@@ -131,12 +134,14 @@ void engine_load_languages(){
         languages[pair.first] = pair.second;
 }
 
+// Set current language code (e.g., "en", "ru", "fr")
 void engine_set_language(const char* lang){
     if(gamestatus.state.scripts.debug)
     debugf("Set language: %s\n", lang);
     strcpy(gamestatus.state_persistent.curlang, lang);
 }
 
+// Get current language code or NULL if not set
 char* engine_get_language(){
     if(gamestatus.state_persistent.curlang[0]) return gamestatus.state_persistent.curlang;
     else return NULL;
@@ -144,10 +149,12 @@ char* engine_get_language(){
 
 filesystem_info_t filesysteminfo;
 
+// Detect whether SD mod filesystem is active
 bool filesystem_ismodded(){
     return false;
 }
 
+// Initialize default filesystem folder names and ROM root
 void filesystem_init(){
     strcpy(filesysteminfo.romrootdir, "rom:/");
     strcpy(gamestatus.data.bgmfolder, "music");
@@ -158,6 +165,7 @@ void filesystem_init(){
     strcpy(gamestatus.data.moviesfolder, "movies");
 }
 
+// Check if a file exists; logs when scripts debug is enabled
 bool filesystem_chkexist(const char* fn){
     FILE *f = fopen(fn, "r"); 
     if(f){
@@ -170,6 +178,7 @@ bool filesystem_chkexist(const char* fn){
     return false;
 }
 
+// Build a directory path for a given asset type; supports language-specific script folders
 std::string filesystem_getfolder(assetdir_t dir, bool modded, bool en_lang){
     std::string romfn = std::string(filesysteminfo.romrootdir);
     std::string sdfn = std::string(filesysteminfo.rootdir);
@@ -187,10 +196,10 @@ std::string filesystem_getfolder(assetdir_t dir, bool modded, bool en_lang){
             sdfn += std::string("/") + gamestatus.data.scriptsfolder + "/" ;
             break;
         case DIR_SCRIPT_LANG:
-            romfn += std::string("/") + gamestatus.data.scriptsfolder + "/" + gamestatus.state_persistent.curlang + "/" ;
-            sdfn += std::string("/") + gamestatus.data.scriptsfolder + "/" + gamestatus.state_persistent.curlang + "/" ;
-            romfn_en += std::string("/") + gamestatus.data.scriptsfolder + "/en/" ;
-            sdfn_en += std::string("/") + gamestatus.data.scriptsfolder + "/en/" ;
+            romfn += std::string("/") + gamestatus.data.scriptsfolder + "/locale/" + gamestatus.state_persistent.curlang + "/" ;
+            sdfn += std::string("/") + gamestatus.data.scriptsfolder + "/locale/" + gamestatus.state_persistent.curlang + "/" ;
+            romfn_en += std::string("/") + gamestatus.data.scriptsfolder + "/locale/en/" ;
+            sdfn_en += std::string("/") + gamestatus.data.scriptsfolder + "/locale/en/" ;
             break;
         case DIR_IMAGE:
             romfn += std::string("/") + gamestatus.data.imagesfolder + "/";
@@ -223,6 +232,7 @@ std::string filesystem_getfolder(assetdir_t dir, bool modded, bool en_lang){
     return romfn;
 }
 
+// Build a concrete filename for a given asset type and base name
 std::string filesystem_getfn(assetdir_t dir, const char* name){
     std::string romfn = std::string(filesysteminfo.romrootdir);
     std::string sdfn = std::string(filesysteminfo.rootdir);
