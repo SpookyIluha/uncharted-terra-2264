@@ -59,7 +59,7 @@ void subtitles_update(){
 }
 
 void subtitles_add(const char* text, float duration, char buttonsprite){
-   subtitles_add(text, duration, buttonsprite, 1);
+   subtitles_add(text, duration, buttonsprite, 2);
 }
 
 void subtitles_add(const char* text, float duration, char buttonsprite, int priority){
@@ -71,6 +71,7 @@ void subtitles_add(const char* text, float duration, char buttonsprite, int prio
     if(!strcmp(text, current_subtitle)) return;
     strcpy(current_subtitle, text);
     if(subtitlesblock) {
+        rspq_wait();
         rspq_block_free(subtitlesblock); 
         subtitlesblock = NULL;
     }
