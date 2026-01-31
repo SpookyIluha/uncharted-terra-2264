@@ -371,6 +371,7 @@ void player_pause_menu(){
 
         float selectorx, selectory;
         float itemselectedselectorx = 0, itemselectedselectory = -100;
+        const int start_y = is_memory_expanded()? 50 : 0;
 
         switch(columnselector){
             case 0:{
@@ -484,45 +485,45 @@ void player_pause_menu(){
         textparms.align = ALIGN_CENTER;
         textparms.wrap = WRAP_ELLIPSES;
 
-        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 320 - 100, 60, dictstr("PAUSE_paused"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 120 - 100, 60, dictstr("PAUSE_items"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 520 - 100, 60, dictstr("PAUSE_journals"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 320 - 100, start_y + 60, dictstr("PAUSE_paused"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 120 - 100, start_y + 60, dictstr("PAUSE_items"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.mainfont, 520 - 100, start_y + 60, dictstr("PAUSE_journals"));
 
         rdpq_set_mode_standard();
         rdpq_set_prim_color(RGBA32(255,255,255,255));
         rdpq_mode_combiner(RDPQ_COMBINER1((0,0,0,PRIM),(0,0,0,TEX0)));
         rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-        rdpq_sprite_blit(selector, selectorx, selectory, NULL);
+        rdpq_sprite_blit(selector, selectorx, start_y + selectory, NULL);
         if(item_selected_first != -1){
             rdpq_set_prim_color(RGBA32(100,100,100,255));
-            rdpq_sprite_blit(selector, itemselectedselectorx, itemselectedselectory, NULL);
+            rdpq_sprite_blit(selector, itemselectedselectorx, start_y + itemselectedselectory, NULL);
         }
 
         rdpq_mode_combiner(RDPQ_COMBINER1((0,0,0,TEX0),(0,0,0,TEX0)));
-        rdpq_sprite_blit(button_a, 640 - 120 - 40, 10, NULL);
+        rdpq_sprite_blit(button_a, 640 - 120 - 40, start_y + 10, NULL);
         textparms.align = ALIGN_LEFT;
         if(columnselector == 0 && item_selected_first != -1){
-            rdpq_sprite_blit(button_b, 640 - 320 - 40, 10, NULL);
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 320, 30, dictstr("PAUSE_combine_items")); 
+            rdpq_sprite_blit(button_b, 640 - 320 - 40, start_y + 10, NULL);
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 320, start_y + 30, dictstr("PAUSE_combine_items")); 
         }
         if(columnselector == 0 && item_selected_first == -1){
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 30, dictstr("PAUSE_select")); 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, start_y + 30, dictstr("PAUSE_select")); 
         } else if (columnselector == 0 && item_selected_first != -1){
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 30, dictstr("PAUSE_use_item")); 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, start_y + 30, dictstr("PAUSE_use_item")); 
         }
         if(columnselector == 1){
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 30, dictstr("PAUSE_select")); 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, start_y + 30, dictstr("PAUSE_select")); 
         }
         if(columnselector == 2){
-            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, 30, dictstr("PAUSE_read_journal")); 
+            rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 640 - 120, start_y + 30, dictstr("PAUSE_read_journal")); 
         }
         textparms.align = ALIGN_CENTER;
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 100, dictstr("PAUSE_continue")); 
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 130, dictstr("PAUSE_savegame"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 160, dictstr("PAUSE_loadgame"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 190, dictstr("PAUSE_togglemusic"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 220, dictstr("PAUSE_togglesounds"));
-        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, 250, dictstr("PAUSE_exittomenu"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, start_y + 100, dictstr("PAUSE_continue")); 
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, start_y + 130, dictstr("PAUSE_savegame"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, start_y + 160, dictstr("PAUSE_loadgame"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, start_y + 190, dictstr("PAUSE_togglemusic"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, start_y + 220, dictstr("PAUSE_togglesounds"));
+        rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 320 - 100, start_y + 250, dictstr("PAUSE_exittomenu"));
 
         textparms.width = 170;
         textparms.align = ALIGN_LEFT;
@@ -531,7 +532,7 @@ void player_pause_menu(){
             int item_slot = player_inventory_get_ith_occupied_item_slot(i);
             int item_id = player_inventory_get_ith_occupied_item_slot_item_id(i);
             std::string itemname = (itemsdict[items_names[item_id]]["fullname"] | "UNKNOWN_ITEM_NAME");
-            int y = 100 + drawnitems*30;
+            int y = start_y + 100 + drawnitems*30;
             rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 50, y, 
                 "%i: %s x %d", i+1, itemname.c_str(), 
                 player_inventory_get_item_count(item_slot));
@@ -548,7 +549,7 @@ void player_pause_menu(){
         
         for(int i = journal_list_draw_offset, drawnentries = 0; i < collectedentries && drawnentries < 6; i++, drawnentries++){
             int journal_entry_id = get_collected_journal_entry_id_by_collected_index(i);
-            int y = 100 + drawnentries*30;
+            int y = start_y + 100 + drawnentries*30;
             rdpq_text_printf(&textparms, gamestatus.fonts.subtitlefont, 450, y, 
                 "%i: %s", i + 1, (journals[std::to_string(journal_entry_id)]["name"] | "UNKNOWN_TITLE").c_str());
         }

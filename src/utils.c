@@ -67,7 +67,7 @@ void rdpq_tex_blit_anchor(const surface_t* surface, rdpq_align_t horizontal, rdp
 void engine_display_init_default(){
     resolution_t res;
     res.width = 640;
-    res.height = is_memory_expanded()? 480 : 350;
+    res.height = is_memory_expanded()? 480 : 360;
     res.interlaced = gamestatus.fastgraphics? INTERLACE_RDP : INTERLACE_HALF;
     res.aspect_ratio = (float)res.width / (float)res.height;
     display_init(res,
@@ -77,7 +77,7 @@ void engine_display_init_default(){
     );
     if(get_tv_type() == TV_PAL && gamestatus.fastgraphics) {
         int offset = is_memory_expanded()? 0 : 60;
-        vi_set_borders((vi_borders_t){.up = 53 + offset, .down = 53 + offset});
+        vi_set_borders((vi_borders_t){.up = 48 + offset, .down = 48 + offset});
         vi_set_yscale_factor(2.0f);
     }
 }
