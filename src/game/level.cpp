@@ -289,7 +289,7 @@
      if(!music.empty()){
          bgm_play(music.c_str(), true, 0.0f);
      } else {
-         bgm_stop(0.0f);
+         bgm_stop(1.0f);
      }
      if(!ambience.empty()){
          sound_play(ambience.c_str(), true);

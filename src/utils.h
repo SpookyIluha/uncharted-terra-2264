@@ -14,9 +14,6 @@ extern "C"{
  * Sometimes the dump screen for Libdragon has an issue
  * where it doesn't show what function an assertion happened
  * inside of, so I just decided to bake it into the message.
- *
- * It can just be used as a drop-in replacement for `assertf`,
- * just add another `f` at the end of the name. lol
  */
 #define assertff(expr, msg, ...) \
         assertf((expr), "%s(): " msg, __func__, ##__VA_ARGS__)
