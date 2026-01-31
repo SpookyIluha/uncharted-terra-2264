@@ -270,6 +270,10 @@ void movie_play(const char* moviefilename, const char* audiofilename, float movi
 		audioutils_mixer_update();
 		rdpq_attach(display_get(), NULL);
 
+        if(display_interlace_rdp_field() >= 0) 
+            rdpq_enable_interlaced(display_interlace_rdp_field());
+        else rdpq_disable_interlaced();
+        
 		// Get the next video frame and feed it into our previously set up blitter.
 		yuv_frame_t frame = mpeg2_get_frame(video_track);
         rdpq_mode_dithering(DITHER_SQUARE_INVSQUARE);
@@ -330,7 +334,13 @@ void game_logo(){
         alpha = 1 - alpha;
 
         surface_t *fb = display_get();
-        rdpq_attach_clear(fb, NULL);
+
+        rdpq_attach(fb, NULL);
+
+        if(display_interlace_rdp_field() >= 0) 
+            rdpq_enable_interlaced(display_interlace_rdp_field());
+        else rdpq_disable_interlaced();
+        rdpq_clear(RGBA32(0,0,0,0));
 
         rdpq_set_mode_standard();
         rdpq_mode_combiner(RDPQ_COMBINER2((PRIM,ENV,PRIM_ALPHA,ENV),(0,0,0,1), (TEX0_BUG,0,COMBINED,0),(0,0,0,1)));
