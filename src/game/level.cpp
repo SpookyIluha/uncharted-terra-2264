@@ -10,6 +10,7 @@
  #include "engine_filesystem.h"
  #include "engine_t3dm_wrapper.h"
  #include "engine_gamestatus.h"
+ #include "playtimelogic.h"
  #include "audioutils.h"
  #include "utils.h"
  #include "level.h"
@@ -457,6 +458,7 @@
      // Start fade from black
      traversal_fade_time = TRAVERSAL_FADE_DURATION;
      traversal_fade_active = true;
+     playtimelogic_savegame();
  }
  
  void change_level_console_command(std::vector<std::string> args) {
