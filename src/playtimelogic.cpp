@@ -107,7 +107,7 @@ void playtimelogic(){
   if(!must_load_game_on_next_frame){
     currentlevel.load(gamestatus.startlevelname);
   }
-  
+  rspq_wait();
   while(!must_goto_main_menu){
     if(must_save_game_on_next_frame){
       savegame();

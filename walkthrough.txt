@@ -1,0 +1,135 @@
+Walkthrough of the Uncharted Terra 2264 
+(In case you get stuck)
+
+After the intro cutscenes, first you appear in your ship that has crashed due to a planet-wide field
+
+You can look around with the stick and walk with the D-Pad or C-Pad
+Additionally you can crouch with the Z button and sprint with the L/R buttons
+Pressing start opens the pause menu which has your collected items on the left,
+options in the middle and the collected journals on the right.
+Use the D-Pad or stick to navigate the different menus.
+You can also save the game in that menu whenever you want, there's also autosaves after entering a new area
+
+In the items section you can select an item (press A) and use it (press A again) on an object that you're close to
+Also you can try combining 2 items into one, by first selecting the first item (press A), then hovering on the second item and press B to combine them
+If the 2 items can be combined, a new item will appear in the place of previous ones.
+
+In the journals section you can navigate through your journals (scrolling if necessary)
+To read a journal, press A on it
+When reading a journal you can use D-Pad or C-Pad to scroll up or down the journal.
+Press A again to close the journal.
+
+Completing the game step-by-step
+
+Starting ship:
+- grab the carbonite tow rope in the front of the ship, near the cockpit
+- grab the red screwdriver in the right bort side of the ship, it should be behind where you started
+- optionally read the ship log on the ground
+- exit the ship through the back
+
+Outside:
+- turn left and walk around the ship to get another journal and a purple crystal
+- turn around and walk back, then go to the right and forward towards the bridge
+- near the bridge there's a dead guy with a magnet, grab it
+- open the menu and combine the magnet with the tow rope, you'll get an inprovised fishing rod
+- go through the bridge to the gate 
+- to the left of the gate, there's a cliffside, below that cliffside lies an ID card, you can pick it up with the fishing rod
+- behind you there's a panel that's screwed in place, you can unscrew it with the screwdriver, use the screwdriver on it
+- that reveals a power source holder, use the crystal on it, the terminal enables
+- go to the gates, to the left of them is the terminal, you can use the ID card on it and the gates open
+- go through the gates
+
+Now that you're inside the colony, you need to get to the deeper level of it, there's a lift in the Corridor B that needs to be repaired and powered on
+corridor B is at the left of the main hub area
+
+Inside (Corridor A)
+- in the middle of the corridor, there's a jack lever, grab it
+- go through to the main hub
+
+Main hub
+- there are 2 journals inside here, one is near the power source to the right, and the other is near a wall in front of the entrance, grab them both
+- you can read the journals to get the password to the medical storage room (which is 6000)
+- go back to the corridor A
+
+Corridor A
+- back at the corridor you can now input the code into the keypad next to the door in the middle of the hallway
+- press A near the keypad and enter the code 6000 on it, that'll open up the door to the room
+- inside the room at the farthest corner of it lies a crystal, grab it
+- go back to the main hub
+
+Main hub
+- go to the right and find a similar looking power source holder, use the crystal on it, that'll open up the door
+- go through the door and towards the light, you'll end up in the bridge area
+
+Bridge area
+- in front there's a broken bridge that needs to be repaired
+- near the bridge, there's a log and the jack's base, grab them
+- combine jack's base with the jack lever to get a jack
+- go back to the main hub
+- go to the left of where you enter the hub from corridor A, you'll find a broken door
+- use the jack on the broken door to open it
+- go inside to the corridor B
+
+Corridor B
+- there's a cog wheel in the middle of the hallway, grab it
+- at the end of the hallway is the lift that is broken and powered off, across it there's a power holder and a conduit holder, 
+you'll need a conduit and a crystal for it to be repaired
+- there's also a watchman's office to the right with a keypad
+- near the entrance to the corridor B there's another journal if you need it
+- go back to the main hub
+
+Main hub
+- go across to the bridge area
+
+Bridge area
+- go near a bridge
+- use the cog wheel on the third axis where the wheel is missing, that'll open the bridge
+- go across to the corridor c
+
+Corridor c
+- in the middle of the hallway there's a Corta's journal, grab it
+- in the journal it states, that the watchman uses the current year (2193 ET) as the password for his cabinet
+- also in the middle of the hallway there's a cabin room with a keypad
+- go back to the bridge area
+
+Bridge area
+- go back to the main hub
+
+Main Hub 
+- go to the corridor B
+
+Corridor B
+- use the code 2193 on the keypad to the watchman's office to the right, the door opens
+- inside there's a crystal, watchman's journal and a conduit rod, grab all of them
+- read the watchman's journal, it says that he hid the conduit wiring somewhere and he deliberately broke the bridge
+- in the journal you can readd about "seeing the numbers" and a path to where he hid the wiring (left, left, right and there I left it) which is the cabin
+- the numbers in the journal go like this: 1 1 2 3, this is the passkey to the cabin
+- go back from the office, use the crystal on the second panel at the end of the hallway
+- go back to the main hub, then to the bridge area, then to the corridor c
+
+Corridor c
+- use the code 1123 on the keypad in the middle of the hallway, that'll open up the cabin
+- inside the cabin, there's conduit wiring and a journal in the opposite corner, grab them
+- combine theee conduit wiring with the conduit rod to get a conduit
+- go back to the corridor B through the bridge and the main hub
+
+Corridor B
+- use the conduit on the first panel at the end of the hallway
+- that'll open up the lift across and you can go into it to the deeper level
+
+Deeper level
+- in the middle of the hallway to the left, there's an energy bridge blocked by 5 lazer grids
+- to the left there's a security room that control them
+- to the right you can find a couple dead bodies, journals and a crystal, grab it
+- go to the security room
+- in the security room there are 5 holders for the crystal, each toggles the lazers to the left and to the right of it
+- i.e using a crystal on the second holder will toggle the first and third lazer and so on.
+- there are 5 lazer grids and the last one is disabled
+- use the crystal on the last holder, then grab it back by pressing a
+- go to the first holder and use a crystal on it, that'll turn off the second lazer
+- then grab it back and use it on the second holder, that'll turn off the first and the third lazer
+- now all lazers are disabled and you can go through
+- through the bridge lies the machine, you need to go towards it and near it you can press A to interact with it
+- choose the option that suits you (provided that you've read the lore) and after pressing the A button on the option, you can bo back through the bridge back into the elevator
+
+That'll trigger a cutscene and that's it, enjoy your ending

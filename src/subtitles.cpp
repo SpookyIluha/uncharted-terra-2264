@@ -87,7 +87,7 @@ void subtitles_draw(){
    if(subtitle_duration <= 0.0f) return;
 
 
-   if(!subtitlesblock){
+   //if(!subtitlesblock){
     float alpha = fclampr(subtitle_duration, 0.0f, 1.0f);
 
     rdpq_fontstyle_t style = gamestatus.fonts.fonts[gamestatus.fonts.subtitlefont - 1].styles[gamestatus.fonts.subtitlefontstyle];
@@ -101,14 +101,14 @@ void subtitles_draw(){
     parms.wrap = gamestatus.fonts.wrappingmode;
     parms.style_id = gamestatus.fonts.subtitlefontstyle;
 
-    rspq_block_begin();
+    //rspq_block_begin();
     rdpq_text_printf(&parms, gamestatus.fonts.subtitlefont, display_get_width() * 0.125f, display_get_height() - SUBTITLES_OFFSET_Y , "%s", current_subtitle);
     if(selectedsprite){
         rdpq_set_mode_standard();
         rdpq_mode_alphacompare(8);
         rdpq_sprite_blit(selectedsprite, (display_get_width() - selectedsprite->width)/2, display_get_height() - SUBTITLES_OFFSET_Y - selectedsprite->height - 5, NULL);
     }
-    subtitlesblock = rspq_block_end();
-   } rspq_block_run(subtitlesblock);
+    //subtitlesblock = rspq_block_end();
+   //} rspq_block_run(subtitlesblock);
 
 }
