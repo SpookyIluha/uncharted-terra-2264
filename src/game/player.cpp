@@ -371,7 +371,7 @@ void player_pause_menu(){
 
         float selectorx, selectory;
         float itemselectedselectorx = 0, itemselectedselectory = -100;
-        const int start_y = is_memory_expanded()? 50 : 0;
+        const int start_y = is_memory_expanded()? 0 : 0;
 
         switch(columnselector){
             case 0:{
@@ -422,22 +422,27 @@ void player_pause_menu(){
                             continue;
                         } break;
                         case 1:{
-                            playtimelogic_savegame();
-                            gamestatus.paused = false;
-                            sound_play("select2", false);
-                            effects_add_rumble(player.joypad.port, 0.1f);
-                            subtitles_add(dictstr("MM_saved"), 3.0f, '\0');
+                            if(playtimelogic_savegame()){
+                                gamestatus.paused = false;
+                                sound_play("select2", false);
+                                effects_add_rumble(player.joypad.port, 0.1f);
+                                subtitles_add(dictstr("MM_saved"), 3.0f, '\0');
+                            } else {
+                                subtitles_add(dictstr("MM_savenfound"), 3.0f, '\0');
+                                gamestatus.paused = false;
+                                sound_play("screw", false);
+                                effects_add_rumble(player.joypad.port, 0.1f);
+                            }
                         } break;
                         case 2:{
-                            if(gamestatus.state_persistent.manualsaved){
-                                playtimelogic_loadgame();
+                            if(playtimelogic_loadgame()){
                                 gamestatus.paused = false;
                                 sound_play("select2", false);
                                 effects_add_rumble(player.joypad.port, 0.1f);
                             } else {
                                 subtitles_add(dictstr("MM_savenfound"), 3.0f, '\0');
                                 gamestatus.paused = false;
-                                sound_play("select2", false);
+                                sound_play("screw", false);
                                 effects_add_rumble(player.joypad.port, 0.1f);
                             }
                         } break;

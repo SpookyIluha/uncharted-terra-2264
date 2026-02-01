@@ -10,8 +10,8 @@ extern bool gamecomplete;
 /// @brief Main gameplay loop
 extern void playtimelogic();
 
-extern void playtimelogic_savegame();
-extern void playtimelogic_loadgame();
+extern bool playtimelogic_savegame();
+extern bool playtimelogic_loadgame();
 extern void playtimelogic_gotomainmenu();
 extern void playtimelogic_console_commands_init();
 

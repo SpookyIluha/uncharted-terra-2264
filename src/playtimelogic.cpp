@@ -28,16 +28,7 @@ bool must_load_game_on_next_frame = false;
 bool must_goto_main_menu = false;
 static int must_play_ending = 0;
 
-void playtimelogic_savegame(){
-  must_save_game_on_next_frame = true;
-}
-
-void playtimelogic_loadgame(){
-  must_load_game_on_next_frame = true;  
-}
-void playtimelogic_gotomainmenu(){
-  must_goto_main_menu = true;
-}
+extern bool eeprom_disabled;
 
 void playtimelogic_console_commands_init(){
   register_game_console_command("game_ending_a", [](std::vector<std::string> args){
@@ -50,17 +41,35 @@ void playtimelogic_console_commands_init(){
   });
 }
 
-void savegame(){
-  currentlevel.save_eeprom();
-  engine_eeprom_save_manual();
-  engine_eeprom_save_persistent();
+bool playtimelogic_savegame(){
+  if(eeprom_disabled) return false;
+  must_save_game_on_next_frame = true;
+  return true;
 }
 
-void loadgame(){
-  engine_eeprom_load_persistent();
-  engine_eeprom_load_manual();
+bool playtimelogic_loadgame(){
+  if(eeprom_disabled || !gamestatus.state_persistent.manualsaved) return false;
+  must_load_game_on_next_frame = true;  
+  return true;
+}
+
+void playtimelogic_gotomainmenu(){
+  must_goto_main_menu = true;
+}
+
+bool savegame(){
+  currentlevel.save_eeprom();
+  bool success = engine_eeprom_save_manual();
+  success &= engine_eeprom_save_persistent();
+  return success;
+}
+
+bool loadgame(){
+  bool success = engine_eeprom_load_persistent();
+  success &= engine_eeprom_load_manual();
   currentlevel.load(gamestatus.state.game.levelname);
   player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
+  return success;
 }
 
 void playtimelogic(){

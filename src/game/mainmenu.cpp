@@ -44,84 +44,99 @@
  
  
  void new_game(){
-     effects_rumble_stop();
-     sprite_t* bg = sprite_load(filesystem_getfn(DIR_IMAGE, "menu/storytime").c_str() );
-     surface_t bgsurf = sprite_get_pixels(bg);
-     bool pressed_start = false;
-     float time = 0;
- 
-     std::ifstream t(filesystem_getfn(DIR_SCRIPT_LANG, "storytime.txt").c_str());
-     std::stringstream buffer;
-     buffer << t.rdbuf();
- 
-     sound_play("ambience_intro", false);
-     bgm_stop(2.0f);
- 
-     while(!pressed_start && time < 70.0f){
-         timesys_update();
-         joypad_poll();
-         time += display_get_delta_time();
-         audioutils_mixer_update();
- 
-         float alpha = 1.0f;
-         if(time < 1.0f) alpha = time;
-         if(time > 60.0f) alpha = 1.0f - (time - 60.0f) / 5.0f;
-         if(alpha > 1.0f) alpha = 1.0f;
-         if(alpha < 0.0f) alpha = 0.0f;
- 
-         joypad_buttons_t pressed = joypad_get_buttons_pressed(JOYPAD_PORT_1);
-         pressed.raw |= joypad_get_buttons_pressed(JOYPAD_PORT_2).raw;
-         if(pressed.start || pressed.a) pressed_start = true;
- 
- 
-         rdpq_attach(display_get(), NULL);
-         if(display_interlace_rdp_field() >= 0) 
-             rdpq_enable_interlaced(display_interlace_rdp_field());
-         else rdpq_disable_interlaced();
-         rdpq_clear(RGBA32(0,0,0,0));
-         int scissor_y = display_get_height() / 2;
-         rdpq_set_scissor(0,scissor_y - 120,640, scissor_y + 120);
- 
-         rdpq_mode_zbuf(false,false);
-         rdpq_sync_pipe();
-         rdpq_sync_tile();
- 
-         rdpq_sync_pipe();
-         rdpq_sync_tile();
-         rdpq_set_mode_standard();
-         rdpq_mode_combiner(RDPQ_COMBINER_TEX_FLAT);
-         rdpq_mode_dithering(DITHER_SQUARE_INVSQUARE);
-         rdpq_set_prim_color(RGBA32(alpha*255,alpha*255,alpha*255,alpha*255));
-         rdpq_blitparms_t blitparms;
-         blitparms.cx = bgsurf.width / 2;
-         blitparms.cy = bgsurf.height / 2;
-         rdpq_sprite_blit(bg, display_get_width() / 2, display_get_height() / 2, &blitparms);
- 
-         rdpq_mode_filter(FILTER_BILINEAR);
-         rdpq_textparms_t parms; parms.align = ALIGN_LEFT; parms.width = display_get_width() - 80; parms.style_id = gamestatus.fonts.titlefontstyle; parms.wrap = gamestatus.fonts.wrappingmode;
-         rdpq_text_printf(&parms, gamestatus.fonts.titlefont, 40, (int)(scissor_y + 140 - time * 10), buffer.str().c_str());
- 
-         rdpq_sync_tile();
-         rdpq_detach_show();
-     }
-     rspq_wait();
-     sprite_free(bg);
-     sound_stop();
-     display_close();
-     {
-         std::string moviefn = filesystem_getfn(DIR_MOVIES, "newgame");
-         movie_play(const_cast<char*>(moviefn.c_str()), "newgame", 15);
-     }
-     sound_stop();
-     bgm_stop(0);
-     audioutils_mixer_update();
-     rspq_wait();
-     wait_ms(2000);
-     engine_display_init_default();
-     rspq_wait();
-     memset(&gamestatus.state.game, 0, sizeof(gamestatus.state.game));
-     playtimelogic();
- }
+    effects_rumble_stop();
+    sprite_t* bg = sprite_load(filesystem_getfn(DIR_IMAGE, "menu/storytime").c_str() );
+    surface_t bgsurf = sprite_get_pixels(bg);
+    bool pressed_start = false;
+    float time = 0;
+
+    std::ifstream t(filesystem_getfn(DIR_SCRIPT_LANG, "storytime.txt").c_str());
+    std::stringstream buffer;
+    buffer << t.rdbuf();
+
+    rdpq_textparms_t parms; 
+    parms.align = ALIGN_LEFT; 
+    parms.width = display_get_width() - 80; 
+    parms.style_id = gamestatus.fonts.titlefontstyle; 
+    parms.wrap = gamestatus.fonts.wrappingmode;
+    
+    int nbytes = strlen(buffer.str().c_str());
+    rdpq_paragraph_t* paragraph = rdpq_paragraph_build(&parms, gamestatus.fonts.titlefont, buffer.str().c_str(), &nbytes);
+    float text_height = paragraph->bbox.y1 - paragraph->bbox.y0;
+    
+    float rate = 10.0f;
+    float fade_time = 5.0f;
+    float duration = (text_height + 260.0f) / rate;
+
+    sound_play("ambience_intro", false);
+    bgm_stop(2.0f);
+
+    while(!pressed_start && time < duration){
+        timesys_update();
+        joypad_poll();
+        time += display_get_delta_time();
+        audioutils_mixer_update();
+
+        float alpha = 1.0f;
+        if(time < 1.0f) alpha = time;
+        float fade_start = duration - fade_time;
+        if(time > fade_start) alpha = 1.0f - (time - fade_start) / fade_time;
+        if(alpha > 1.0f) alpha = 1.0f;
+        if(alpha < 0.0f) alpha = 0.0f;
+
+        joypad_buttons_t pressed = joypad_get_buttons_pressed(JOYPAD_PORT_1);
+        pressed.raw |= joypad_get_buttons_pressed(JOYPAD_PORT_2).raw;
+        if(pressed.start || pressed.a) pressed_start = true;
+
+
+        rdpq_attach(display_get(), NULL);
+        if(display_interlace_rdp_field() >= 0) 
+            rdpq_enable_interlaced(display_interlace_rdp_field());
+        else rdpq_disable_interlaced();
+        rdpq_clear(RGBA32(0,0,0,0));
+        int scissor_y = display_get_height() / 2;
+        rdpq_set_scissor(0,scissor_y - 120,640, scissor_y + 120);
+
+        rdpq_mode_zbuf(false,false);
+        rdpq_sync_pipe();
+        rdpq_sync_tile();
+
+        rdpq_sync_pipe();
+        rdpq_sync_tile();
+        rdpq_set_mode_standard();
+        rdpq_mode_combiner(RDPQ_COMBINER_TEX_FLAT);
+        rdpq_mode_dithering(DITHER_SQUARE_INVSQUARE);
+        rdpq_set_prim_color(RGBA32(alpha*255,alpha*255,alpha*255,alpha*255));
+        rdpq_blitparms_t blitparms;
+        blitparms.cx = bgsurf.width / 2;
+        blitparms.cy = bgsurf.height / 2;
+        rdpq_sprite_blit(bg, display_get_width() / 2, display_get_height() / 2, &blitparms);
+
+        rdpq_mode_filter(FILTER_BILINEAR);
+        rdpq_paragraph_render(paragraph, 40, (int)(scissor_y + 140 - time * rate));
+
+        rdpq_sync_tile();
+        rdpq_detach_show();
+    }
+    rspq_wait();
+    sprite_free(bg);
+    rdpq_paragraph_free(paragraph);
+    sound_stop();
+    display_close();
+    {
+        std::string moviefn = filesystem_getfn(DIR_MOVIES, "newgame");
+        movie_play(const_cast<char*>(moviefn.c_str()), "newgame", 15);
+    }
+    sound_stop();
+    bgm_stop(0);
+    audioutils_mixer_update();
+    rspq_wait();
+    wait_ms(2000);
+    engine_display_init_default();
+    rspq_wait();
+    memset(&gamestatus.state.game, 0, sizeof(gamestatus.state.game));
+    playtimelogic();
+}
  
  void game_draw(){
    uint8_t colorAmbient[4] = {255, 255, 255, 0xFF};
@@ -324,10 +339,17 @@
              if(btn.a) 
                  switch(selection){
                      case 0:{
-                         bgm_stop(0); 
-                         playtimelogic_loadgame();
-                         sound_play("select2", false); gamestart = true; cont = true;
-                     } break;
+                        bgm_stop(0); 
+                        if(playtimelogic_loadgame()){
+                            sound_play("select2", false); gamestart = true; cont = true;
+                        } else {
+                            // If eeprom is disabled or load failed, show message
+                            // However, in main menu we don't have a subtitle system active like in player.cpp
+                            // But the user specifically asked for dictstr("MM_savenfound")
+                            // We can just stay in the menu for now as playtimelogic_loadgame will return false
+                            sound_play("screw", false); 
+                        }
+                    } break;
                      case 1:{
                          sound_play("select2", false); 
                          gamestart = true;

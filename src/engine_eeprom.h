@@ -15,16 +15,16 @@ void engine_eeprom_init();
 void engine_eeprom_checksaves();
 
 /// @brief Save a manual file, should only be used by the game, or inside the game loop (i.e after calling newgame)
-void engine_eeprom_save_manual();
+bool engine_eeprom_save_manual();
 
 /// @brief Load a manual file replacing the gamestatus
-void engine_eeprom_load_manual();
+bool engine_eeprom_load_manual();
 
 /// Save any persistent data, such as language, global game state etc.
-void engine_eeprom_save_persistent();
+bool engine_eeprom_save_persistent();
 
 /// Load any persistent data into gamestatus, such as language, global game state etc.
-void engine_eeprom_load_persistent();
+bool engine_eeprom_load_persistent();
 
 /// Delete all saves except persistent
 void engine_eeprom_delete_saves();
