@@ -37,6 +37,10 @@ void player_load_from_eeprom(){
     memcpy(&player.position, &gamestatus.state.game.playerpos, sizeof(fm_vec3_t));
     memcpy(&player.camera.rotation, &gamestatus.state.game.playerrot, sizeof(fm_vec3_t));
     fm_vec3_dir_from_euler(&player.camera.camTarget_off, &player.camera.rotation);
+    
+    fm_vec3_t position = (fm_vec3_t){{(player.position.x), ((player.position.y + player.charheight)), (player.position.z)}};
+    fm_vec3_scale(&position, &position, T3D_TOUNITSCALE);
+    memcpy(&player.camera.camPos_off, &position, sizeof(fm_vec3_t));
 }
 
 void player_init(){
@@ -670,7 +674,7 @@ void player_update(){
 
     player.camera.position = (fm_vec3_t){{(player.position.x), ((player.position.y + player.charheight)), (player.position.z)}};
     float velocitylen = fm_vec3_len2(&player.velocity);
-    player.camera.position.y += sinf(CURRENT_TIME * 12.0f) * velocitylen * T3D_FROMUNITS(0.5f);
+    player.camera.position.y += sinf(CURRENT_TIME * 12.0f) * velocitylen * T3D_FROMUNITS(1.0f);
     player.camera.rotation.x += cosf(CURRENT_TIME * 6.0f) * velocitylen * 0.0008f;
 
     player.camera.rotation.x += cosf(CURRENT_TIME * 2.0f) * 0.0005f;

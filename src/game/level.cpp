@@ -433,12 +433,17 @@
      direction.y = 0;
      
      // Set player rotation to face the direction from origin to exit (horizontal only, pitch = 0)
-     fm_vec3_euler_from_dir(&player.camera.rotation, &direction);
-             
-     // Immediately update camera target offset to match new rotation (no lerp delay)
-     fm_vec3_dir_from_euler(&player.camera.camTarget_off, &player.camera.rotation);
-     
-     // Reset player velocity to prevent carrying momentum between levels
+    fm_vec3_euler_from_dir(&player.camera.rotation, &direction);
+            
+    // Immediately update camera target offset and position offset to match new rotation/position (no lerp delay)
+    fm_vec3_dir_from_euler(&player.camera.camTarget_off, &player.camera.rotation);
+    
+    fm_vec3_t cam_pos = (fm_vec3_t){{(player.position.x), ((player.position.y + player.charheight)), (player.position.z)}};
+    player.camera.position = cam_pos;
+    fm_vec3_scale(&cam_pos, &cam_pos, T3D_TOUNITSCALE);
+    player.camera.camPos_off = cam_pos;
+    
+    // Reset player velocity to prevent carrying momentum between levels
      player.velocity = (fm_vec3_t){{0, 0, 0}};
      
      // Update camera far plane to match new level's draw distance

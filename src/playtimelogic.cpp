@@ -81,7 +81,9 @@ void playtimelogic(){
 
   must_goto_main_menu = false;
   must_play_ending = 0;
-  T3DViewport viewport = t3d_viewport_create_buffered(6);
+  T3DViewport viewport[6];
+  for(int i =  0; i < 6; i++)
+    viewport[i] = t3d_viewport_create();
 
   player_init();
   surface_t surf_zbuf;
@@ -139,7 +141,7 @@ void playtimelogic(){
     mixer_try_play();
 
     t3d_frame_start();
-    player_draw(&viewport);
+    player_draw(&viewport[(FRAME_NUMBER) % 6]);
     rdpq_set_mode_standard();
     temporal_dither(FRAME_NUMBER);
     rdpq_mode_persp(true);
@@ -148,7 +150,7 @@ void playtimelogic(){
     rdpq_mode_zmode(ZMODE_INTERPENETRATING);
     rdpq_sync_pipe();
     rdpq_sync_tile();
-    t3d_viewport_attach(&viewport);
+    t3d_viewport_attach(&viewport[FRAME_NUMBER % 6]);
     t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
     currentlevel.draw();
     rdpq_sync_pipe();
@@ -170,11 +172,13 @@ void playtimelogic(){
     }
     
     rdpq_detach_show();
+    //rspq_wait(); // stupid fix that should be removed, put there because the camera matrix lags badly
     mixer_try_play();
   }
   rspq_wait();
   effects_rumble_stop();
-  t3d_viewport_destroy(&viewport);
+  for(int i = 0; i < 6; i++)
+    t3d_viewport_destroy(&viewport[i]);
   currentlevel.free();
 
   if ( surf_zbuf.buffer )
