@@ -130,10 +130,7 @@ void playtimelogic(){
     mixer_try_play();
 
     t3d_frame_start();
-    t3d_viewport_attach(&viewport);
-
     player_draw(&viewport);
-
     rdpq_set_mode_standard();
     temporal_dither(FRAME_NUMBER);
     rdpq_mode_persp(true);
@@ -142,6 +139,7 @@ void playtimelogic(){
     rdpq_mode_zmode(ZMODE_INTERPENETRATING);
     rdpq_sync_pipe();
     rdpq_sync_tile();
+    t3d_viewport_attach(&viewport);
     t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
     currentlevel.draw();
     rdpq_sync_pipe();
@@ -261,7 +259,7 @@ void playtimelogic(){
     };
 
     play_scroll(must_play_ending == 1? "end_a.txt" : "end_b.txt", "menu/storytime");
-    play_scroll("credits.txt", "menu/storytime2");
+    play_scroll("credits.txt", must_play_ending == 1? "menu/storytime2" : "menu/storytime3");
     display_close();
     bgm_stop(1.0f);
     game_logo();

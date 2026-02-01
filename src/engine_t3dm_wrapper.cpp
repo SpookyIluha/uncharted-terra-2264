@@ -103,31 +103,31 @@ void T3DMWModel::draw() {
         state = t3d_model_state_create();
 
         for(const auto& obj : objects) {
-            t3d_model_draw_material(obj.object->material, &state);  
-            rdpq_set_tile_size(TILE0, obj.hscroll, obj.vscroll, 1000, 1000);
-            switch(obj.fog){
-                case 0:
-                    t3d_fog_set_enabled(false);
-                    break;
-                case 1:
-                    t3d_fog_set_enabled(true);
-                    t3d_state_set_drawflags(static_cast<T3DDrawFlags>(obj.object->material->renderFlags | T3D_FLAG_SHADED));
-                    rdpq_mode_blender(RDPQ_BLENDER((IN_RGB, SHADE_ALPHA, FOG_RGB, INV_MUX_ALPHA)));
-                    break;
-                case 2:
-                    t3d_fog_set_enabled(false);
-                    t3d_state_set_drawflags(static_cast<T3DDrawFlags>(obj.object->material->renderFlags | T3D_FLAG_SHADED));
-                    rdpq_mode_blender(RDPQ_BLENDER((IN_RGB, SHADE_ALPHA, FOG_RGB, INV_MUX_ALPHA)));
-                    break;
-                default:
-                    t3d_fog_set_enabled(false);
-                    break;  
-            }
-            rdpq_mode_zbuf(obj.zread, obj.zwrite);
-            rdpq_mode_antialias(AA_REDUCED);
-            rdpq_mode_zmode(ZMODE_INTERPENETRATING);
             if(!obj.object->userBlock){
                 rspq_block_begin();
+                t3d_model_draw_material(obj.object->material, &state);  
+                rdpq_set_tile_size(TILE0, obj.hscroll, obj.vscroll, 1000, 1000);
+                switch(obj.fog){
+                    case 0:
+                        t3d_fog_set_enabled(false);
+                        break;
+                    case 1:
+                        t3d_fog_set_enabled(true);
+                        t3d_state_set_drawflags(static_cast<T3DDrawFlags>(obj.object->material->renderFlags | T3D_FLAG_SHADED));
+                        rdpq_mode_blender(RDPQ_BLENDER((IN_RGB, SHADE_ALPHA, FOG_RGB, INV_MUX_ALPHA)));
+                        break;
+                    case 2:
+                        t3d_fog_set_enabled(false);
+                        t3d_state_set_drawflags(static_cast<T3DDrawFlags>(obj.object->material->renderFlags | T3D_FLAG_SHADED));
+                        rdpq_mode_blender(RDPQ_BLENDER((IN_RGB, SHADE_ALPHA, FOG_RGB, INV_MUX_ALPHA)));
+                        break;
+                    default:
+                        t3d_fog_set_enabled(false);
+                        break;  
+                }
+                rdpq_mode_zbuf(obj.zread, obj.zwrite);
+                rdpq_mode_antialias(AA_REDUCED);
+                rdpq_mode_zmode(ZMODE_INTERPENETRATING);
                 debugf("Drawing object: %s (renderorder=%d, zread=%d, zwrite=%d, hscroll=%.2f, vscroll=%.2f)\n",
                    obj.object->material->name, obj.renderorder, obj.zread, obj.zwrite, obj.hscroll, obj.vscroll);
                 t3d_model_draw_object(obj.object, NULL);

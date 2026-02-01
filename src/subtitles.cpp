@@ -86,19 +86,21 @@ void subtitles_add(const char* text, float duration, char buttonsprite, int prio
 void subtitles_draw(){
    if(subtitle_duration <= 0.0f) return;
 
-   float alpha = fclampr(subtitle_duration, 0.0f, 1.0f);
 
-   rdpq_fontstyle_t style = gamestatus.fonts.fonts[gamestatus.fonts.subtitlefont - 1].styles[gamestatus.fonts.subtitlefontstyle];
-   style.color.a = alpha*255;
-   style.outline_color.a = alpha*255;
-   rdpq_font_style(gamestatus.fonts.fonts[gamestatus.fonts.subtitlefont - 1].font, gamestatus.fonts.subtitlefontstyle, &style);
-   rdpq_textparms_t parms;
-   parms.width = display_get_width() * 0.75f;
-   parms.height = SUBTITLES_HEIGHT;
-   parms.align = ALIGN_CENTER;
-   parms.wrap = gamestatus.fonts.wrappingmode;
-   parms.style_id = gamestatus.fonts.subtitlefontstyle;
    if(!subtitlesblock){
+    float alpha = fclampr(subtitle_duration, 0.0f, 1.0f);
+
+    rdpq_fontstyle_t style = gamestatus.fonts.fonts[gamestatus.fonts.subtitlefont - 1].styles[gamestatus.fonts.subtitlefontstyle];
+    style.color.a = alpha*255;
+    style.outline_color.a = alpha*255;
+    rdpq_font_style(gamestatus.fonts.fonts[gamestatus.fonts.subtitlefont - 1].font, gamestatus.fonts.subtitlefontstyle, &style);
+    rdpq_textparms_t parms;
+    parms.width = display_get_width() * 0.75f;
+    parms.height = SUBTITLES_HEIGHT;
+    parms.align = ALIGN_CENTER;
+    parms.wrap = gamestatus.fonts.wrappingmode;
+    parms.style_id = gamestatus.fonts.subtitlefontstyle;
+
     rspq_block_begin();
     rdpq_text_printf(&parms, gamestatus.fonts.subtitlefont, display_get_width() * 0.125f, display_get_height() - SUBTITLES_OFFSET_Y , "%s", current_subtitle);
     if(selectedsprite){
