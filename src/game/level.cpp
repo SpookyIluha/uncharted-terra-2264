@@ -424,7 +424,7 @@
      assertf(dest_traversal != nullptr, "Destination traversal '%s' not found in level '%s'", destinationnamebuffer, levelnamebuffer);
          
      // Set player position to the exit position of the destination traversal
-     fm_vec3_t old_pos = player.position;
+     //fm_vec3_t old_pos = player.position;
      player_init();
      player.position = dest_traversal->exitposition;
      
@@ -451,9 +451,9 @@
      player.camera.far_plane = T3D_TOUNITS(currentlevel.drawdistance);
      
      debugf("Level change complete\n");
-     debugf("Player position: (%.2f, %.2f, %.2f) -> (%.2f, %.2f, %.2f)\n",
+     /*debugf("Player position: (%.2f, %.2f, %.2f) -> (%.2f, %.2f, %.2f)\n",
             old_pos.x, old_pos.y, old_pos.z,
-            player.position.x, player.position.y, player.position.z);
+            player.position.x, player.position.y, player.position.z);*/
      
      // Start fade from black
      traversal_fade_time = TRAVERSAL_FADE_DURATION;
