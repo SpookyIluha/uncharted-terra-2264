@@ -3,8 +3,8 @@ build/
 filesystem/
 reference/
 boxart/
-movies/
 screenshots/
+referencemovies/
 boxart/
 *.z64
 .vscode/
